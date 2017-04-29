@@ -1,23 +1,34 @@
-const Canvas = require('canvas');
+const fabric = require('fabric').fabric;
+const canvas = fabric.createCanvasForNode(800, 600);
 const fs = require('fs');
 const path = require('path');
+const opentype = require('opentype.js');
 
-const formatImageStats = function(data, battletag) {
-	const stats = data['stats']['competitive']['overall_stats'];
-	const moreStats = data['stats']['competitive']['game_stats'];
-	const averageStats = data['stats']['competitive']['average_stats'];
-	const heroesPlaytime = data['heroes']['playtime']['competitive'];
-	const heroes = data['heroes']['stats']['competitive'];
+module.exports.generate = async function(data, pretty_bt, ranks, mode, user_id, chat_id) {
+	let stats, moreStats, averageStats, overallStats, heroesPlaytime, heroes;
+
+	if (mode === 'quickplay') {
+		stats = data['stats']['quickplay']['overall_stats'];
+		moreStats = data['stats']['quickplay']['game_stats'];
+		averageStats = data['stats']['quickplay']['average_stats'];
+		overallStats = data['stats']['quickplay']['overall_stats'];
+		heroesPlaytime = data['heroes']['playtime']['quickplay'];
+		heroes = data['heroes']['stats']['competitive'];
+	} else if (mode === 'competitive') {
+		stats = data['stats']['competitive']['overall_stats'];
+		moreStats = data['stats']['competitive']['game_stats'];
+		averageStats = data['stats']['competitive']['average_stats'];
+		overallStats = data['stats']['competitive']['overall_stats'];
+		heroesPlaytime = data['heroes']['playtime']['competitive'];
+		heroes = data['heroes']['stats']['competitive'];
+	}
 
 	let level = stats['level'];
-	let competitiveStats;
-
-	// Get overall level
 	if (typeof stats['prestige'] === 'number') {
 		level += (stats['prestige'] * 100);
 	}
 
-	var heroesColors = {
+	const heroesColors = {
 		ana: '#47699e',
 		bastion: '#5a724f',
 		dva: '#fc78bd',
@@ -44,181 +55,428 @@ const formatImageStats = function(data, battletag) {
 		zenyatta: '#fcee5a'
 	};
 
-	const heroesArr = Object.keys(heroesPlaytime).map((key) => ({
-		name: key,
-		timePlayed: heroesPlaytime[key],
-	}));
+	const heroesArr = Object.keys(heroesPlaytime).map(function (key) {
+		return {
+			name: key,
+			timePlayed: heroesPlaytime[key]
+		}
+	});
 
-	heroesArr.sort((a, b) => b.timePlayed - a.timePlayed);
-
-	const image = Canvas.Image;
-	const font = Canvas.Font;
-	const canvas = new Canvas(1240, 740);
-	const ctx = canvas.getContext('2d');
+	heroesArr.sort(function (a, b) {
+		return b.timePlayed - a.timePlayed
+	});
 
 	// Подключение шрифта
-	const bignoodle = new font('BigNoodleTooOblique', __dirname + '/../fonts/BigNoodleTooOblique.ttf');
-	const futura = new font('Futura', __dirname + '/../fonts/FuturaPTBold.ttf');
+	const bignoodle_ot = opentype.loadSync('fonts/BigNoodleToo.ttf');
+	const bignoodle_italic_ot = opentype.loadSync('fonts/BigNoodleTooOblique.ttf');
+	const futura_ot = opentype.loadSync('fonts/FuturaPTBold.ttf');
+
+	const bignoodle = new canvas.Font('BigNoodleToo', __dirname + '/fonts/BigNoodleToo.ttf');
+	const bignoodle_italic = new canvas.Font('BigNoodleTooOblique', __dirname + '/fonts/BigNoodleTooOblique.ttf');
+	const futura =  new canvas.Font('Futura', __dirname + '/fonts/FuturaPTBold.ttf');
 
 	// Включение шрифта
-	ctx.addFont(bignoodle);
-	ctx.addFont(futura);
+	canvas.contextContainer.addFont(bignoodle);
+	canvas.contextContainer.addFont(bignoodle_italic);
+	canvas.contextContainer.addFont(futura);
 
-	ctx.font = '120px BigNoodleTooOblique';
-	const battletagWidth = ctx.measureText(battletag).width;
-	ctx.font = '90px BigNoodleTooOblique';
-	const rankWidth = ctx.measureText(stats['comprank']).width;
-	const levelWidth = ctx.measureText(level).width;
+	// Обводка и белый фон
 
-	ctx.fillStyle = "#fff";
-	ctx.strokeStyle = getGradient(ctx, ctx.canvas.width, heroesColors[`${heroesArr[0].name}`], heroesColors[`${heroesArr[1].name}`], heroesColors[`${heroesArr[2].name}`], heroesColors[`${heroesArr[3].name}`], heroesColors[`${heroesArr[4].name}`]);
-	ctx.lineWidth = 16;
+	let outline = new fabric.Rect({
+		width: canvas.width,
+		height: canvas.height
+	});
 
-	ctx.rect(8, 8, ctx.canvas.width - 16, 740 - 16);
-	ctx.fill();
-	ctx.stroke();
+	outline.setGradient('fill', {
+		x2: outline.width,
+		colorStops: {
+			0:    heroesColors[heroesArr[0].name],
+			0.25: heroesColors[heroesArr[1].name],
+			0.5:  heroesColors[heroesArr[2].name],
+			0.75: heroesColors[heroesArr[3].name],
+			1:    heroesColors[heroesArr[4].name]
+		}
+	});
 
-	let gradient;
-	function getGradient(context, width, hero1, hero2, hero3, hero4, hero5) {
-		gradient = context.createLinearGradient(0, 0, width, 0);
-		gradient.addColorStop(0, hero1);
-		gradient.addColorStop(1 / 4, hero2);
-		gradient.addColorStop(2 / 4, hero3);
-		gradient.addColorStop(3 / 4, hero4);
-		gradient.addColorStop(1, hero5);
+	canvas.add(outline);
 
-		return gradient;
-	}
+	const background = new fabric.Rect({
+		left: 10, top: 10,
+		fill: 'white',
+		init: function () {
+			this.width = outline.width - this.left * 2;
+			this.height = outline.height - this.top * 2;
+			return this;
+		}
+	}.init());
 
-	ctx.textBaseline = 'hanging';
-	ctx.font = '120px BigNoodleTooOblique';
-	ctx.fillStyle = '#777';
-	ctx.fillText(battletag, 40, 30);
+	canvas.add(background);
 
-	ctx.font = '90px BigNoodleTooOblique';
-	ctx.fillStyle = '#7749a9';
-	ctx.fillRect(90 + battletagWidth, 44, 120 + rankWidth, 100);
+	// Battletag и уровень/ранк
 
-	ctx.fillStyle = '#a35435';
-	ctx.fillRect(40 + battletagWidth + 90 + rankWidth + 80, 44, levelWidth + 40, 100);
+	const battletag = new fabric.Text(pretty_bt, {
+		left: 20, top: 20,
+		fill: '#555',
+		fontFamily: 'BigNoodleTooOblique',
+		fontSize: 50
+	});
 
-	ctx.fillStyle = '#fff';
-	ctx.fillText((stats['comprank'] || 0), 180 + battletagWidth, 46);
-	ctx.fillText(level, 40 + battletagWidth + 90 + rankWidth + 90, 46);
+	canvas.add(battletag);
 
-	const img = new image;
+	let tempValue = 0;
+	if (mode === 'quickplay')
+		tempValue = level.toString();
+	else if (mode === 'competitive')
+		tempValue = stats.comprank.toString();
 
-	if (stats['comprank'] >= 0 && stats['comprank'] < 1500)
-		img.src = fs.readFileSync(path.join(__dirname, 'images', 'rank', '1.png'));
-	if (stats['comprank'] >= 1500 && stats['comprank'] < 2000)
-		img.src = fs.readFileSync(path.join(__dirname, 'images', 'rank', '2.png'));
-	if (stats['comprank'] >= 2000 && stats['comprank'] < 2500)
-		img.src = fs.readFileSync(path.join(__dirname, 'images', 'rank', '3.png'));
-	if (stats['comprank'] >= 2500 && stats['comprank'] < 3000)
-		img.src = fs.readFileSync(path.join(__dirname, 'images', 'rank', '4.png'));
-	if (stats['comprank'] >= 3000 && stats['comprank'] < 3500)
-		img.src = fs.readFileSync(path.join(__dirname, 'images', 'rank', '5.png'));
-	if (stats['comprank'] >= 3500 && stats['comprank'] < 4000)
-		img.src = fs.readFileSync(path.join(__dirname, 'images', 'rank', '6.png'));
-	if (stats['comprank'] >= 4000 && stats['comprank'] <= 5000)
-		img.src = fs.readFileSync(path.join(__dirname, 'images', 'rank', '7.png'));
+	const rank_width = bignoodle_ot.getAdvanceWidth(tempValue, 50);
 
-	ctx.drawImage(img, 90 + battletagWidth, 50, 90, 90);
+	const value = new fabric.Text(tempValue, {
+		left: canvas.width - rank_width - 25,
+		top: 20,
+		fill: 'white',
+		fontFamily: 'BigNoodleToo',
+		fontSize: 50
+	});
 
-	ctx.textBaseline = 'alphabetic';
-	const dist_temp = 240;
+	const rect = new fabric.Rect({
+		init: function () {
+			if (mode === 'quickplay')
+				this.fill = '#a35435';
+			else if (mode === 'competitive')
+				this.fill = '#7749a9';
+			this.left = canvas.width - this.width - 20;
+			return this;
+		},
+		top: value.top,
+		width: rank_width + 10,
+		height: value.height - 5,
+	}.init());
+
+	canvas.add(rect);
+	canvas.add(value);
+
+	// Картинки героев
 
 	for (let i = 0; i < 5; i++) {
-		// Рисуем серую подложку
-		ctx.fillStyle = '#ccc';
-		ctx.fillRect(40 + i * dist_temp, 180, 200, 200);
+		function addImage() {
+			return new Promise(function (resolve) {
+				fabric.Image.fromURL(`images/heroes/${heroesArr[i].name}.png`, function (img) {
+					img.set({
+						left: 20 + 155 * i,
+						top: 80,
+						width: 140,
+						height: 240
+					});
 
-		// Рисуем фото героев
-		img.src = fs.readFileSync(path.join(__dirname, '..', 'images', 'heroes', `${heroesArr[i].name}.png`));
-		ctx.drawImage(img, 6, 75, 170, 170, 40 + i * dist_temp, 180, 200, 200);
+					const background = new fabric.Rect({
+						left: img.left,
+						top: img.top,
+						width: img.width,
+						height: img.height,
+						fill: '#ccc'
+					});
 
-		// Пишем время игры
-		ctx.font = '40px Futura';
-		ctx.fillStyle = '#777';
-		ctx.textAlign = "left";
-		ctx.fillText(`${Math.round(heroesArr[i].timePlayed * 10) / 10}H`, 40 + i * dist_temp, 430);
+					const panel = new fabric.Rect({
+						left: img.left - 1,
+						top: img.top + 200,
+						width: img.width + 1,
+						height: img.height - 200,
+						fill: heroesColors[heroesArr[i].name]
+					});
 
-		// Пишем винрейт
-		let name_temp;
-		if (heroesArr[i].name == 'dva')
-			name_temp = 'd.va';
-		else
-			name_temp = heroesArr[i].name;
+					let timeColor;
 
-		console.log(name_temp);
-		console.log(heroes[`${name_temp}`]['general_stats']['games_won']);
+					const regexp = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(heroesColors[heroesArr[i].name]);
+					const result = {
+						r: parseInt(regexp[1], 16),
+						g: parseInt(regexp[2], 16),
+						b: parseInt(regexp[3], 16)
+					};
 
-		let winrate;
-		if (heroes[`${name_temp}`]['general_stats']['games_won'] != undefined)
-			winrate = Math.round(heroes[`${name_temp}`]['general_stats']['games_won'] / heroes[`${name_temp}`]['general_stats']['games_played'] * 100 * 10) / 10;
-		else
-			winrate = 0;
+					const brightness = Math.sqrt(
+						result.r * result.r * 0.241 +
+						result.g * result.g * 0.691 +
+						result.b * result.b * 0.068
+					);
 
-		if (winrate > 50)
-			ctx.fillStyle = '#64a102';
-		else
-			ctx.fillStyle = '#be3012';
+					if (brightness > 220)
+						timeColor = '#999';
+					else
+						timeColor = 'white';
 
-		ctx.textAlign = "right";
-		ctx.fillText(`${winrate}%`, 240 + i * dist_temp, 430);
-	}
+					let timeTemp;
+					if (heroesArr[i].timePlayed < 1)
+						timeTemp = `${heroesArr[i].timePlayed * 60}M`;
+					else
+						timeTemp = `${heroesArr[i].timePlayed.toFixed()}H`;
 
-	const statsNameArr = {
-		1: 'Винрейт, %'.toUpperCase(),
-		2: 'Убийств/смертей'.toUpperCase(),
-		3: 'Нанесено урона'.toUpperCase(),
-		4: 'Объем исцеления'.toUpperCase(),
-		5: 'Убийств'.toUpperCase(),
-		6: 'Убийств у объектов'.toUpperCase(),
-		7: 'Одиночных убийств'.toUpperCase(),
-		8: 'Выполнение задач'.toUpperCase(),
-		9: 'Смертей'.toUpperCase(),
-		10: 'Кол-во игр'.toUpperCase(),
-	};
+					const timePlayed = new fabric.Text(timeTemp, {
+						left: img.left + img.width - 10 - bignoodle_ot.getAdvanceWidth(timeTemp, 30),
+						top: img.top + img.height - 35,
+						fill: timeColor,
+						fontFamily: 'BigNoodleToo',
+						fontSize: 30
+					});
 
-	const statsArr = {
-		1: `${Math.round(stats['wins'] / stats['games'] * 100 * 100) / 100}`,
-		2: `${moreStats['kpd']}`,
-		3: `${averageStats['damage_done_avg']}`,
-		4: `${averageStats['healing_done_avg']}`,
-		5: `${averageStats['eliminations_avg']}`,
-		6: `${averageStats['objective_kills_avg']}`,
-		7: `${averageStats['solo_kills_avg']}`,
-		8: `${hoursToMMSS(averageStats['objective_time_avg'])}`,
-		9: `${averageStats['deaths_avg']}`,
-		10: `${stats['games']}`,
-	};
+					canvas.add(background);
+					canvas.add(img);
+					canvas.add(panel);
+					canvas.add(timePlayed);
 
-	const dist_temp = 240;
-	const dist_temp2 = 130;
-	ctx.textAlign = "left";
-	ctx.fillStyle = '#777';
-	ctx.font = '80px BigNoodleTooOblique';
-
-	for (let i = 0; i < 2; i++) {
-		ctx.fillRect(40, 500 + i * dist_temp2, 1160, 4);
-		for (let j = 0; j < 5; j++) {
-			if (i === 0) {
-				ctx.font = '24px Futura';
-				ctx.fillText(`${statsNameArr[j + 1]}`, 40 + j * dist_temp, 490 + i * dist_temp2);
-				ctx.font = '80px BigNoodleTooOblique';
-				ctx.fillText(`${statsArr[j + 1]}`, 40 + j * dist_temp, 570 + i * dist_temp2);
-			}
-			if (i === 1) {
-				ctx.font = '24px Futura';
-				ctx.fillText(`${statsNameArr[j + 6]}`, 40 + j * dist_temp, 490 + i * dist_temp2);
-				ctx.font = '80px BigNoodleTooOblique';
-				ctx.fillText(`${statsArr[j + 6]}`, 40 + j * dist_temp, 570 + i * dist_temp2);
-			}
+					resolve();
+				});
+			});
 		}
+		await addImage();
 	}
 
-	return canvas.toBuffer();
-};
+	// Статы
 
-module.exports = formatImageStats;
+	let tempStats;
+	if (mode === 'quickplay')
+		tempStats = [
+			{
+				key: ranks[0].name,
+				value: averageStats['damage_done_avg'],
+				rank: `${ranks[0].rank}%`
+			},
+			{
+				key: ranks[1].name,
+				value: averageStats['deaths_avg'],
+				rank: `${ranks[1].rank}%`
+			},
+			{
+				key: ranks[2].name,
+				value: averageStats['eliminations_avg'],
+				rank: `${ranks[2].rank}%`
+			},
+			{
+				key: ranks[3].name,
+				value: averageStats['final_blows_avg'],
+				rank: `${ranks[3].rank}%`
+			},
+			{
+				key: ranks[4].name,
+				value: averageStats['healing_done_avg'],
+				rank: `${ranks[4].rank}%`
+			},
+			{
+				key: ranks[5].name,
+				value: averageStats['melee_final_blows_avg'],
+				rank: `${ranks[5].rank}%`
+			},
+			{
+				key: ranks[6].name,
+				value: averageStats['objective_kills_avg'],
+				rank: `${ranks[6].rank}%`
+			},
+			{
+				key: ranks[7].name,
+				value: hoursToTime(averageStats['objective_time_avg']),
+				rank: `${ranks[7].rank}%`
+			},
+			{
+				key: ranks[8].name,
+				value: averageStats['solo_kills_avg'],
+				rank: `${ranks[8].rank}%`
+			},
+			{
+				key: ranks[9].name,
+				value: hoursToTime(averageStats['time_spent_on_fire_avg']),
+				rank: `${ranks[9].rank}%`
+			}
+		];
+	else if (mode === 'competitive')
+		tempStats = [
+			{
+				key: ranks[0].name,
+				value: averageStats['damage_done_avg'],
+				rank: `${ranks[0].rank}%`
+			},
+			{
+				key: ranks[1].name,
+				value: averageStats['deaths_avg'],
+				rank: `${ranks[1].rank}%`
+			},
+			{
+				key: ranks[2].name,
+				value: averageStats['eliminations_avg'],
+				rank: `${ranks[2].rank}%`
+			},
+			{
+				key: ranks[3].name,
+				value: averageStats['final_blows_avg'],
+				rank: `${ranks[3].rank}%`
+			},
+			{
+				key: ranks[4].name,
+				value: averageStats['objective_kills_avg'],
+				rank: `${ranks[4].rank}%`
+			},
+			{
+				key: ranks[5].name,
+				value: hoursToTime(averageStats['objective_time_avg']),
+				rank: `${ranks[5].rank}%`
+			},
+			{
+				key: ranks[6].name,
+				value: averageStats['solo_kills_avg'],
+				rank: `${ranks[6].rank}%`
+			},
+			{
+				key: ranks[7].name,
+				value: hoursToTime(averageStats['time_spent_on_fire_avg']),
+				rank: `${ranks[7].rank}%`
+			},
+			{
+				key: ranks[8].name,
+				value: moreStats['kpd'],
+				rank: `${ranks[8].rank}%`
+			},
+			{
+				key: ranks[9].name,
+				value: overallStats['win_rate'],
+				rank: `${ranks[9].rank}%`
+			}
+		];
+
+	// First group
+
+	const line0 = new fabric.Rect({
+		width: canvas.width - 40,
+		height: 1,
+		left: 20,
+		top: 355
+	});
+
+	const line1 = new fabric.Rect({
+		width: canvas.width - 40,
+		height: 1,
+		left: 20,
+		top: 405
+	});
+
+	// Second group
+
+	const line2 = new fabric.Rect({
+		width: canvas.width - 40,
+		height: 1,
+		left: 20,
+		top: 485
+	});
+
+	const line3 = new fabric.Rect({
+		width: canvas.width - 40,
+		height: 1,
+		left: 20,
+		top: 535
+	});
+
+	canvas.add(line0);
+	canvas.add(line1);
+	canvas.add(line2);
+	canvas.add(line3);
+
+	for (let column = 0; column < tempStats.length / 2; column++) {
+		// First group
+
+		const key0 = new fabric.Text(tempStats[column].key, {
+			left: 20 + 155 * column,
+			top: 330 + 100 * 0,
+			fill: 'grey',
+			fontFamily: 'BigNoodleToo',
+			fontSize: 20
+		});
+
+		const value0 = new fabric.Text(tempStats[column].value.toString(), {
+			left: 20 + 155 * column,
+			top: 355 + 100 * 0,
+			fill: '#555',
+			fontFamily: 'BigNoodleTooOblique',
+			fontSize: 50
+		});
+
+		const rank0 = new fabric.Text(tempStats[column].rank.toString(), {
+			left: 20 + 155 * column,
+			top: 410 + 100 * 0,
+			fill: 'grey',
+			fontFamily: 'BigNoodleToo',
+			fontSize: 30
+		});
+
+		// Second group
+
+		const key1 = new fabric.Text(tempStats[column + 5].key, {
+			left: 20 + 155 * column,
+			top: 360 + 100 * 1,
+			fill: 'grey',
+			fontFamily: 'BigNoodleToo',
+			fontSize: 20
+		});
+
+		const value1 = new fabric.Text(tempStats[column + 5].value.toString(), {
+			left: 20 + 155 * column,
+			top: 385 + 100 * 1,
+			fill: '#555',
+			fontFamily: 'BigNoodleTooOblique',
+			fontSize: 50
+		});
+
+		const rank1 = new fabric.Text(tempStats[column + 5].rank, {
+			left: 20 + 155 * column,
+			top: 440 + 100 * 1,
+			fill: 'grey',
+			fontFamily: 'BigNoodleToo',
+			fontSize: 30
+		});
+
+		canvas.add(key0);
+		canvas.add(value0);
+		canvas.add(rank0);
+
+		canvas.add(key1);
+		canvas.add(value1);
+		canvas.add(rank1);
+	}
+
+	const stream = canvas.createPNGStream();
+	let temp = [];
+
+	stream.on('data', function (chunk) {
+		temp.push(chunk);
+	});
+
+	stream.on('end', function () {
+		const buffer = Buffer.concat(temp);
+		bot.sendPhoto(chat_id, buffer)
+			.then(function (status) {
+				let quickplay_file_id, competitive_file_id;
+				if (mode === 'quickplay')
+					quickplay_file_id = status.photo[status.photo.length - 1].file_id;
+				else if (mode === 'competitive')
+					competitive_file_id = status.photo[status.photo.length - 1].file_id;
+				r.db('overwatch').table('users').get(user_id)
+					.update({
+						quickplay_file_id: quickplay_file_id,
+						competitive_file_id: competitive_file_id,
+						file_date: r.now()
+					})
+
+					.then(function (status) {
+						console.log(status);
+					})
+
+					.catch(function (error) {
+						console.warn(error.message);
+						bot.sendMessage(msg.chat.id,
+							`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>`, opts);
+					})
+			})
+
+			.catch(function (error) {
+				bot.sendMessage(msg.chat.id,
+					`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>`, opts);
+				});
+	});
+};

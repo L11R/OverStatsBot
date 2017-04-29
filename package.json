@@ -5,8 +5,10 @@
   "main": "index.js",
   "dependencies": {
     "canvas": "^1.6.5",
+    "fabric": "^2.0.0-beta.1",
     "fs": "0.0.1-security",
     "node-telegram-bot-api": "^0.27.0",
+    "opentype.js": "^0.7.1",
     "path": "^0.12.7",
     "ramda": "^0.23.0",
     "rethinkdbdash": "^2.3.28"
