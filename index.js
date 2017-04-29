@@ -1,15 +1,20 @@
 /**
  * Created by savely on 15.04.2017.
  */
+// Patch for Console
+require("console-stamp")(console, {pattern : "HH:MM:ss.l"});
+
 const image = require('./image');
 const TelegramBot = require('node-telegram-bot-api');
-const token = '310312986:AAGY8_okTSptA2eD4chZ0KX_pFRblbnr5Nw';
+const token = '310312986:AAHSzL-UAV4LnKS0eiTMj5Pm1v6BBu3GPzg';
 
+// RethinkDB Driver, Ramda (for future), Telegram Bot Lib
 global.r = require('rethinkdbdash')();
 global.R = require('ramda');
 global.bot = new TelegramBot(token, { polling: true });
 global.opts = {parse_mode: 'HTML'};
 
+// Function to convert hours to HH:MM format
 global.hoursToTime = function (hours) {
 	function hoursToMinutes(hours) {
 		if (hours) {
@@ -31,10 +36,12 @@ global.hoursToTime = function (hours) {
 	return 0;
 };
 
+// Handle /start command
 bot.onText(/^\/start/, function (msg) {
 	bot.sendMessage(msg.chat.id, 'Используйте /help, если не знаете что делать.', opts);
 });
 
+// Handle /help command
 bot.onText(/^\/help/, function (msg) {
 	bot.sendMessage(msg.chat.id,
 		'<b>OverStats 2.0</b> <code>by @kraso</code>\n\n' +
@@ -48,20 +55,24 @@ bot.onText(/^\/help/, function (msg) {
 		'<i>[Временно]</i> /ratingtop - Топ-10 в Соревновательной Игре по рейтингу\n', opts);
 });
 
+// Handle /save command
 bot.onText(/^\/save (.+)\s(.+)|^\/save/, function (msg, match) {
 	let pretty_bt, battletag, platform, param;
 
+	// Checks if guy send us just command without params
 	if (match[1] === undefined || match[2] === undefined)
 		bot.sendMessage(msg.chat.id, 'Пример: <code>/save Example#1337 eu</code>\n' +
 			'Доступные варианты: ' +
 			'<code>eu</code>, <code>us</code>, <code>kr</code>, <code>psn</code>, <code>xbl</code>', opts);
 	else {
+		// Replace - to # in BattleTag
 		if (match[1].indexOf('-') > -1) {
 			const temp = match[1].split('-');
 			pretty_bt = temp[0] + '#' + temp[1];
 		} else
 			pretty_bt = match[1];
 
+		// Replace # to - in BattleTag
 		if (match[1].indexOf('#') > -1) {
 			const temp = match[1].split('#');
 			battletag = temp[0] + '-' + temp[1];
@@ -78,6 +89,7 @@ bot.onText(/^\/save (.+)\s(.+)|^\/save/, function (msg, match) {
 		else
 			param = match[2];
 
+		// Save profile from OWAPI directly in database.
 		r.db('overwatch').table('users')
 			.insert(
 				{
@@ -111,7 +123,9 @@ bot.onText(/^\/save (.+)\s(.+)|^\/save/, function (msg, match) {
 	}
 });
 
+// Handle /update command
 bot.onText(/^\/update/, async function (msg) {
+	const msg_status = await bot.sendMessage(msg.chat.id, 'Пожалуйста подождите, идет обновление...');
 	const user = await r.db('overwatch').table('users').get(msg.from.id);
 
 	let profile;
@@ -125,7 +139,6 @@ bot.onText(/^\/update/, async function (msg) {
 		bot.sendMessage(msg.chat.id,
 			`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>`, opts);
 	}
-
 
 	r.db('overwatch').table('users').get(msg.from.id)
 		.update(
@@ -145,9 +158,9 @@ bot.onText(/^\/update/, async function (msg) {
 		.then(function (status) {
 			console.log(status);
 			if (status.replaced !== 0)
-				bot.sendMessage(msg.chat.id, 'Обновлено.', opts);
+				bot.editMessageText('Обновлено.', { message_id: msg_status.message_id, chat_id: msg.chat.id });
 			if (status.skipped !== 0)
-				bot.sendMessage(msg.chat.id, 'Изменения не внесены!', opts);
+				bot.editMessageText('Изменения не внесены.', { message_id: msg_status.message_id, chat_id: msg.chat.id });
 		})
 
 		.catch(function (error) {
@@ -158,6 +171,7 @@ bot.onText(/^\/update/, async function (msg) {
 });
 
 bot.onText(/^\/delete/, function (msg) {
+	// Just fully deletes profile from DB
 	r.db('overwatch').table('users').get(msg.from.id)
 		.delete()
 
@@ -251,6 +265,8 @@ function getRank(obj) {
 }
 
 bot.onText(/^\/generate (.+)|^\/generate/, async function (msg, match) {
+	console.log('Message handling started!');
+
 	if (match[1] === undefined)
 		bot.sendMessage(msg.chat.id, 'Пример: <code>/generate competitive</code>\n' +
 			'Доступные параметры: ' +
@@ -316,12 +332,15 @@ bot.onText(/^\/generate (.+)|^\/generate/, async function (msg, match) {
 
 		Promise.all(arrayOfPromises)
 			.then(function (res) {
+				console.log('All promises with ranks returned!');
+
 				r.db('overwatch').table('users').get(msg.from.id)
 					.then(async function (user) {
+						console.log('Full user profile returned!');
 						try {
-							const status = await bot.sendMessage(msg.chat.id, 'Пожалуйста подождите, идет генерация...');
+							const msg_status = await bot.sendMessage(msg.chat.id, 'Пожалуйста подождите, идет генерация...');
 							await image.generate(user.profile, user.pretty_bt, res, match[1], msg.from.id, msg.chat.id);
-							bot.editMessageText('Готово!', { message_id: status.message_id, chat_id: msg.chat.id })
+							bot.editMessageText('Готово!', { message_id: msg_status.message_id, chat_id: msg.chat.id })
 						} catch (error) {
 							console.warn(error.message);
 							bot.sendMessage(msg.chat.id,

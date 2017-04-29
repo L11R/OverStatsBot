@@ -5,6 +5,7 @@ const path = require('path');
 const opentype = require('opentype.js');
 
 module.exports.generate = async function(data, pretty_bt, ranks, mode, user_id, chat_id) {
+	console.log('Stats preparing!');
 	let stats, moreStats, averageStats, overallStats, heroesPlaytime, heroes;
 
 	if (mode === 'quickplay') {
@@ -66,7 +67,8 @@ module.exports.generate = async function(data, pretty_bt, ranks, mode, user_id, 
 		return b.timePlayed - a.timePlayed
 	});
 
-	// Подключение шрифта
+	console.log('Fonts activating!');
+	// Fonts plug in
 	const bignoodle_ot = opentype.loadSync('fonts/BigNoodleToo.ttf');
 	const bignoodle_italic_ot = opentype.loadSync('fonts/BigNoodleTooOblique.ttf');
 	const futura_ot = opentype.loadSync('fonts/FuturaPTBold.ttf');
@@ -75,13 +77,13 @@ module.exports.generate = async function(data, pretty_bt, ranks, mode, user_id, 
 	const bignoodle_italic = new canvas.Font('BigNoodleTooOblique', __dirname + '/fonts/BigNoodleTooOblique.ttf');
 	const futura =  new canvas.Font('Futura', __dirname + '/fonts/FuturaPTBold.ttf');
 
-	// Включение шрифта
+	// Fonts activating
 	canvas.contextContainer.addFont(bignoodle);
 	canvas.contextContainer.addFont(bignoodle_italic);
 	canvas.contextContainer.addFont(futura);
 
+	console.log('Image generation started!');
 	// Обводка и белый фон
-
 	let outline = new fabric.Rect({
 		width: canvas.width,
 		height: canvas.height
@@ -200,7 +202,7 @@ module.exports.generate = async function(data, pretty_bt, ranks, mode, user_id, 
 						result.b * result.b * 0.068
 					);
 
-					if (brightness > 220)
+					if (brightness > 200)
 						timeColor = '#999';
 					else
 						timeColor = 'white';
@@ -440,22 +442,30 @@ module.exports.generate = async function(data, pretty_bt, ranks, mode, user_id, 
 		canvas.add(rank1);
 	}
 
+	console.log('Image generation completed!');
 	const stream = canvas.createPNGStream();
+	console.log('Image rendered!');
 	let temp = [];
 
+	console.log('Stream started!');
 	stream.on('data', function (chunk) {
 		temp.push(chunk);
+		console.log('Streaming...');
 	});
 
 	stream.on('end', function () {
 		const buffer = Buffer.concat(temp);
+		canvas.clear();
+		console.log('Stream ended, starting sending!');
 		bot.sendPhoto(chat_id, buffer)
 			.then(function (status) {
+				console.log('Sending completed!');
 				let quickplay_file_id, competitive_file_id;
 				if (mode === 'quickplay')
 					quickplay_file_id = status.photo[status.photo.length - 1].file_id;
 				else if (mode === 'competitive')
 					competitive_file_id = status.photo[status.photo.length - 1].file_id;
+				console.log('Saving file_id started!');
 				r.db('overwatch').table('users').get(user_id)
 					.update({
 						quickplay_file_id: quickplay_file_id,
@@ -469,13 +479,13 @@ module.exports.generate = async function(data, pretty_bt, ranks, mode, user_id, 
 
 					.catch(function (error) {
 						console.warn(error.message);
-						bot.sendMessage(msg.chat.id,
+						bot.sendMessage(chat_id,
 							`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>`, opts);
 					})
 			})
 
 			.catch(function (error) {
-				bot.sendMessage(msg.chat.id,
+				bot.sendMessage(chat_id,
 					`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>`, opts);
 				});
 	});
