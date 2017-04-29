@@ -3,7 +3,7 @@
  */
 const image = require('./image');
 const TelegramBot = require('node-telegram-bot-api');
-const token = '310312986:AAGY8_okTSptA2eD4chZ0KX_pFRblbnr5Nw';
+const token = 'YOUR_TOKEN';
 
 global.r = require('rethinkdbdash')();
 global.R = require('ramda');
