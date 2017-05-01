@@ -155,9 +155,11 @@ bot.onText(/^\/update/, async function (msg) {
 		.then(function (status) {
 			console.log(status);
 			if (status.replaced !== 0)
-				bot.editMessageText('Обновлено!', { message_id: msg_status.message_id, chat_id: msg.chat.id });
+				bot.editMessageText('Обновлено!',
+					{ message_id: msg_status.message_id, chat_id: msg.chat.id });
 			if (status.skipped !== 0)
-				bot.editMessageText('Изменения не внесены!', { message_id: msg_status.message_id, chat_id: msg.chat.id });
+				bot.editMessageText('Изменения не внесены!',
+					{ message_id: msg_status.message_id, chat_id: msg.chat.id });
 		})
 
 		.catch(function (error) {
