@@ -6,7 +6,6 @@ global.config = require('./config');
 
 const image = require('./image');
 const TelegramBot = require('node-telegram-bot-api');
-const token = '310312986:AAG1ign5hd10x2aunxBx9njBFJU1KMqPkr8';
 
 global.r = require('rethinkdbdash')();
 global.R = require('ramda');
@@ -193,11 +192,13 @@ bot.onText(/^\/winratetop/, function (msg) {
 		.then(function (users) {
 			let top = '<b>Топ-10 по винрейту в Быстрой Игре</b>:\n';
 			for (let i in users) {
-				if (users[i].profile !== undefined) {
-					if (users[i].username !== undefined)
-						top += `${parseInt(i) + 1}. ${users[i].pretty_bt} (<code>@${users[i].username}</code>): ${users[i].profile.stats.quickplay.overall_stats.win_rate}%\n`
-					else
-						top += `${parseInt(i) + 1}. ${users[i].pretty_bt}: ${users[i].profile.stats.quickplay.overall_stats.win_rate}%\n`
+				if (users.hasOwnProperty(i)) {
+					if (users[i].profile !== undefined) {
+						if (users[i].username !== undefined)
+							top += `${parseInt(i) + 1}. ${users[i].pretty_bt} (<code>@${users[i].username}</code>): ${users[i].profile.stats.quickplay.overall_stats.win_rate}%\n`;
+						else
+							top += `${parseInt(i) + 1}. ${users[i].pretty_bt}: ${users[i].profile.stats.quickplay.overall_stats.win_rate}%\n`
+					}
 				}
 			}
 			bot.sendMessage(msg.chat.id, top, parse_html);
@@ -211,11 +212,13 @@ bot.onText(/^\/ratingtop/, function (msg) {
 		.then(function (users) {
 			let top = '<b>Топ-10 по рейтингу в Соревновательной Игре</b>:\n';
 			for (let i in users) {
-				if (users[i].profile !== undefined) {
-					if (users[i].username !== undefined)
-						top += `${parseInt(i) + 1}. ${users[i].pretty_bt} (<code>@${users[i].username}</code>): ${users[i].profile.stats.competitive.overall_stats.comprank}\n`
-					else
-						top += `${parseInt(i) + 1}. ${users[i].pretty_bt}: ${users[i].profile.stats.competitive.overall_stats.comprank}\n`
+				if (users.hasOwnProperty(i)) {
+					if (users[i].profile !== undefined) {
+						if (users[i].username !== undefined)
+							top += `${parseInt(i) + 1}. ${users[i].pretty_bt} (<code>@${users[i].username}</code>): ${users[i].profile.stats.competitive.overall_stats.comprank}\n`;
+						else
+							top += `${parseInt(i) + 1}. ${users[i].pretty_bt}: ${users[i].profile.stats.competitive.overall_stats.comprank}\n`
+					}
 				}
 			}
 			bot.sendMessage(msg.chat.id, top, parse_html);
@@ -378,16 +381,18 @@ bot.onText(/^\/generate/, async function (msg) {
 			let text = 'Процесс генерации:\n<pre>';
 			const startTotal = new Date().getTime();
 			for (let i in res) {
-				const startCicle = new Date().getTime();
-				try {
-					await image.generate(user.profile, user.pretty_bt, res[i], mode[i], msg.from.id, msg.chat.id);
-					text += `${(new Date().getTime()) - startCicle} ms: ${mode[i]} done!️\n`;
-				} catch (error) {
-					console.warn(error.message);
-					text += `${(new Date().getTime()) - startCicle} ms: ${mode[i]} failed!\n`;
+				if (res.hasOwnProperty(i)) {
+					const startCicle = new Date().getTime();
+					try {
+						await image.generate(user.profile, user.pretty_bt, res[i], mode[i], msg.from.id, msg.chat.id);
+						text += `${(new Date().getTime()) - startCicle} ms: ${mode[i]} done!️\n`;
+					} catch (error) {
+						console.warn(error.message);
+						text += `${(new Date().getTime()) - startCicle} ms: ${mode[i]} failed!\n`;
+					}
+					bot.editMessageText(`${text}Total: ${(new Date().getTime()) - startTotal} ms</pre>`,
+						{message_id: msg_status.message_id, chat_id: msg.chat.id, parse_mode: 'HTML'});
 				}
-				bot.editMessageText(`${text}Total: ${(new Date().getTime()) - startTotal} ms</pre>`,
-					{message_id: msg_status.message_id, chat_id: msg.chat.id, parse_mode: 'HTML'});
 			}
 		})
 
