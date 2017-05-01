@@ -1,10 +1,14 @@
 const fabric = require('fabric').fabric;
-const canvas = fabric.createCanvasForNode(800, 600);
 const fs = require('fs');
 const path = require('path');
 const opentype = require('opentype.js');
+const imgur = require('imgur');
+
+imgur.setClientId(config.private.imgur_client_id);
 
 module.exports.generate = async function(data, pretty_bt, ranks, mode, user_id, chat_id) {
+	const canvas = fabric.createCanvasForNode(800, 600);
+
 	console.log('Stats preparing!');
 	let stats, moreStats, averageStats, overallStats, heroesPlaytime, heroes;
 
@@ -115,7 +119,6 @@ module.exports.generate = async function(data, pretty_bt, ranks, mode, user_id, 
 	canvas.add(background);
 
 	// Battletag и уровень/ранк
-
 	const battletag = new fabric.Text(pretty_bt, {
 		left: 20, top: 20,
 		fill: '#555',
@@ -159,7 +162,6 @@ module.exports.generate = async function(data, pretty_bt, ranks, mode, user_id, 
 	canvas.add(value);
 
 	// Картинки героев
-
 	for (let i = 0; i < 5; i++) {
 		function addImage() {
 			return new Promise(function (resolve) {
@@ -234,7 +236,6 @@ module.exports.generate = async function(data, pretty_bt, ranks, mode, user_id, 
 	}
 
 	// Статы
-
 	let tempStats;
 	if (mode === 'quickplay')
 		tempStats = [
@@ -344,7 +345,6 @@ module.exports.generate = async function(data, pretty_bt, ranks, mode, user_id, 
 		];
 
 	// First group
-
 	const line0 = new fabric.Rect({
 		width: canvas.width - 40,
 		height: 1,
@@ -360,7 +360,6 @@ module.exports.generate = async function(data, pretty_bt, ranks, mode, user_id, 
 	});
 
 	// Second group
-
 	const line2 = new fabric.Rect({
 		width: canvas.width - 40,
 		height: 1,
@@ -382,7 +381,6 @@ module.exports.generate = async function(data, pretty_bt, ranks, mode, user_id, 
 
 	for (let column = 0; column < tempStats.length / 2; column++) {
 		// First group
-
 		const key0 = new fabric.Text(tempStats[column].key, {
 			left: 20 + 155 * column,
 			top: 330 + 100 * 0,
@@ -408,7 +406,6 @@ module.exports.generate = async function(data, pretty_bt, ranks, mode, user_id, 
 		});
 
 		// Second group
-
 		const key1 = new fabric.Text(tempStats[column + 5].key, {
 			left: 20 + 155 * column,
 			top: 360 + 100 * 1,
@@ -443,7 +440,9 @@ module.exports.generate = async function(data, pretty_bt, ranks, mode, user_id, 
 	}
 
 	console.log('Image generation completed!');
-	const stream = canvas.createPNGStream();
+	const stream = canvas.createJPEGStream({
+		quality: 90
+	});
 	console.log('Image rendered!');
 	let temp = [];
 
@@ -453,40 +452,67 @@ module.exports.generate = async function(data, pretty_bt, ranks, mode, user_id, 
 		console.log('Streaming...');
 	});
 
-	stream.on('end', function () {
-		const buffer = Buffer.concat(temp);
+	stream.on('end', async function () {
+		// Clean canvas to prevent memory leak!
 		canvas.clear();
+
+		// Create image buffer to send it directly to Telegram
+		const buffer = Buffer.concat(temp);
 		console.log('Stream ended, starting sending!');
-		bot.sendPhoto(chat_id, buffer)
-			.then(function (status) {
-				console.log('Sending completed!');
-				let quickplay_file_id, competitive_file_id;
+
+		// Getting deletehash from DB and removing image from Imgur (yes, we save their space to keep it free)
+		await r.db('overwatch').table('users').get(user_id).pluck(
+			[
+				'imgur_competitive_deletehash',
+				'imgur_quickplay_deletehash'
+			])
+			.then(function (res) {
 				if (mode === 'quickplay')
-					quickplay_file_id = status.photo[status.photo.length - 1].file_id;
+					return imgur.deleteImage(res.imgur_quickplay_deletehash);
 				else if (mode === 'competitive')
-					competitive_file_id = status.photo[status.photo.length - 1].file_id;
-				console.log('Saving file_id started!');
-				r.db('overwatch').table('users').get(user_id)
-					.update({
-						quickplay_file_id: quickplay_file_id,
-						competitive_file_id: competitive_file_id,
-						file_date: r.now()
-					})
+					return imgur.deleteImage(res.imgur_competitive_deletehash);
+			})
 
-					.then(function (status) {
-						console.log(status);
-					})
-
-					.catch(function (error) {
-						console.warn(error.message);
-						bot.sendMessage(chat_id,
-							`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>`, opts);
-					})
+			.then(function(status) {
+				console.log(status);
 			})
 
 			.catch(function (error) {
+				console.warn(error);
+			});
+
+		// Uploading new image and saving link and deletehash
+		await imgur.uploadBase64(buffer.toString('base64'))
+			.then(function (res) {
+				console.log(res);
+				let imgur_competitive_link, imgur_competitive_deletehash,
+					imgur_quickplay_link, imgur_quickplay_deletehash;
+
+				if (mode === 'quickplay') {
+					imgur_quickplay_link = res.data.link;
+					imgur_quickplay_deletehash = res.data.deletehash;
+				} else if (mode === 'competitive') {
+					imgur_competitive_link = res.data.link;
+					imgur_competitive_deletehash = res.data.deletehash;
+				}
+
+				return r.db('overwatch').table('users').get(user_id)
+					.update({
+						imgur_competitive_link: imgur_competitive_link,
+						imgur_competitive_deletehash: imgur_competitive_deletehash,
+						imgur_quickplay_link: imgur_quickplay_link,
+						imgur_quickplay_deletehash: imgur_quickplay_deletehash,
+					});
+			})
+
+			.then(function (status) {
+				console.log(status);
+			})
+
+			.catch(function (error) {
+				console.warn(error.message);
 				bot.sendMessage(chat_id,
-					`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>`, opts);
-				});
+					`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>`, parse_html);
+			})
 	});
 };
