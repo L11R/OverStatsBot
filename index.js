@@ -2,7 +2,9 @@
  * Created by savely on 15.04.2017.
  */
 require('console-stamp')(console, { pattern: 'HH:MM:ss.l'});
+
 global.config = require('./config');
+global.parse_html = {parse_mode:'HTML'};
 
 const image = require('./image');
 const TelegramBot = require('node-telegram-bot-api');
@@ -10,8 +12,6 @@ const TelegramBot = require('node-telegram-bot-api');
 global.r = require('rethinkdbdash')();
 global.R = require('ramda');
 global.bot = new TelegramBot(config.private.token, { polling: true });
-
-global.parse_html = {parse_mode:'HTML'};
 
 global.hoursToTime = function (hours) {
 	function hoursToMinutes(hours) {
@@ -56,7 +56,7 @@ bot.onText(/^\/help/, function (msg) {
 		'ту или иную характеристику, лучше чем у вас.', parse_html);
 });
 
-bot.onText(/^\/save (.+)\s(.+)|^\/save/, function (msg, match) {
+bot.onText(/^\/save (.+)\s(.+)|^\/save/, async function (msg, match) {
 	let pretty_bt, battletag, platform, param;
 
 	if (match[1] === undefined || match[2] === undefined)
@@ -64,6 +64,7 @@ bot.onText(/^\/save (.+)\s(.+)|^\/save/, function (msg, match) {
 			'Доступные варианты: ' +
 			'<code>eu</code>, <code>us</code>, <code>kr</code>, <code>psn</code>, <code>xbl</code>', parse_html);
 	else {
+		const msg_status = await bot.sendMessage(msg.chat.id, 'Пожалуйста подождите, идет сохранение...');
 		if (match[1].indexOf('-') > -1) {
 			const temp = match[1].split('-');
 			pretty_bt = temp[0] + '#' + temp[1];
@@ -109,12 +110,12 @@ bot.onText(/^\/save (.+)\s(.+)|^\/save/, function (msg, match) {
 			)
 			.then(function (status) {
 				console.log(status);
-				bot.sendMessage(msg.chat.id, 'Сохранено.');
+				bot.editMessageText('Сохранено!', { message_id: msg_status.message_id, chat_id: msg.chat.id });
 			})
 			.catch(function (error) {
 				console.log(error.message);
-				bot.sendMessage(msg.chat.id,
-					`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>`, parse_html);
+				bot.editMessageText(`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>`,
+					{message_id: msg_status.message_id, chat_id: msg.chat.id, parse_mode: 'HTML'});
 			});
 	}
 });
@@ -131,8 +132,8 @@ bot.onText(/^\/update/, async function (msg) {
 		profile = null;
 
 		console.warn(error.message);
-		bot.sendMessage(msg.chat.id,
-			`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>`, parse_html);
+		bot.editMessageText(`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>`,
+			{message_id: msg_status.message_id, chat_id: msg.chat.id, parse_mode: 'HTML'});
 	}
 
 
@@ -161,8 +162,8 @@ bot.onText(/^\/update/, async function (msg) {
 
 		.catch(function (error) {
 			console.warn(error.message);
-			bot.sendMessage(msg.chat.id,
-				`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>`, parse_html);
+			bot.editMessageText(`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>`,
+				{message_id: msg_status.message_id, chat_id: msg.chat.id, parse_mode: 'HTML'});
 		});
 });
 
@@ -173,7 +174,7 @@ bot.onText(/^\/delete/, function (msg) {
 		.then(function (status) {
 			console.log(status);
 			if (status.deleted !== 0)
-				bot.sendMessage(msg.chat.id, 'Профиль удален.');
+				bot.sendMessage(msg.chat.id, 'Удалено!');
 			if (status.skipped !== 0)
 				bot.sendMessage(msg.chat.id, 'Нечего удалять.');
 		})
