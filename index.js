@@ -1,7 +1,7 @@
 /**
  * Created by savely on 15.04.2017.
  */
-require('console-stamp')({ pattern: 'HH:MM:SS:l'});
+require('console-stamp')(console, { pattern: 'HH:MM:ss.l'});
 global.config = require('./config');
 
 const image = require('./image');
