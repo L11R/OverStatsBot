@@ -8,7 +8,7 @@ Needs Node.js 7+, because of using async/await construction in the code.
 
 ### How to deploy
 1. Install Node 7+ and RethinkDB.
-2. Create database `overwatch` and `users` table in GUI ([localhost:8080](http://localhost:8080))
+2. Create database `overwatch` and `users` table in GUI ([localhost:8080](http://localhost:8080)) _(you can do it directly in code or in cli-mode of course if you can)_.
 3. `git clone https://github.com/Lord-Protector/OverStatsBot.git`
 4. `npm install`
 5. Create file config.js in the root and paste it:
@@ -19,7 +19,7 @@ module.exports.private = {
 };
 ```
 Of course you will should to get token from [@BotFather](https://t.me/BotFather) and 
-[here](https://api.imgur.com/oauth2/addclient) (anonymous usage is enough for us).
+client_id from Imgur [here](https://api.imgur.com/oauth2/addclient) (anonymous usage is enough for us).
 
 ### Roadmap
 - [x] Image generation for quick and competitive games
@@ -28,4 +28,4 @@ Of course you will should to get token from [@BotFather](https://t.me/BotFather)
 - [ ] Image generation for dedicated heroes
 - [ ] Ability to save profile snapshots everyday (for example) to plot some graphs
 
-Feel free to commit and write me PM [here](https://t.me/kraso)!
+**Feel free to commit and write me PM [here](https://t.me/kraso)!**
