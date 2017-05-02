@@ -6,8 +6,9 @@ const imgur = require('imgur');
 
 imgur.setClientId(config.private.imgur_client_id);
 
-module.exports.generate = async function(data, pretty_bt, ranks, mode, user_id, chat_id) {
+module.exports.generate = async function(data, pretty_bt, ranks, user_id, chat_id) {
 	const canvas = fabric.createCanvasForNode(800, 600);
+	const mode = ranks[ranks.length - 1];
 
 	console.log('Stats preparing!');
 	let stats, moreStats, averageStats, overallStats, heroesPlaytime, heroes;
@@ -236,113 +237,58 @@ module.exports.generate = async function(data, pretty_bt, ranks, mode, user_id, 
 	}
 
 	// Статы
-	let tempStats;
-	if (mode === 'quickplay')
-		tempStats = [
-			{
-				key: ranks[0].name,
-				value: averageStats['damage_done_avg'],
-				rank: `${ranks[0].rank}%`
-			},
-			{
-				key: ranks[1].name,
-				value: averageStats['deaths_avg'],
-				rank: `${ranks[1].rank}%`
-			},
-			{
-				key: ranks[2].name,
-				value: averageStats['eliminations_avg'],
-				rank: `${ranks[2].rank}%`
-			},
-			{
-				key: ranks[3].name,
-				value: averageStats['final_blows_avg'],
-				rank: `${ranks[3].rank}%`
-			},
-			{
-				key: ranks[4].name,
-				value: averageStats['healing_done_avg'],
-				rank: `${ranks[4].rank}%`
-			},
-			{
-				key: ranks[5].name,
-				value: averageStats['melee_final_blows_avg'],
-				rank: `${ranks[5].rank}%`
-			},
-			{
-				key: ranks[6].name,
-				value: averageStats['objective_kills_avg'],
-				rank: `${ranks[6].rank}%`
-			},
-			{
-				key: ranks[7].name,
-				value: hoursToTime(averageStats['objective_time_avg']),
-				rank: `${ranks[7].rank}%`
-			},
-			{
-				key: ranks[8].name,
-				value: averageStats['solo_kills_avg'],
-				rank: `${ranks[8].rank}%`
-			},
-			{
-				key: ranks[9].name,
-				value: hoursToTime(averageStats['time_spent_on_fire_avg']),
-				rank: `${ranks[9].rank}%`
-			}
-		];
-	else if (mode === 'competitive')
-		tempStats = [
-			{
-				key: ranks[0].name,
-				value: averageStats['damage_done_avg'],
-				rank: `${ranks[0].rank}%`
-			},
-			{
-				key: ranks[1].name,
-				value: averageStats['deaths_avg'],
-				rank: `${ranks[1].rank}%`
-			},
-			{
-				key: ranks[2].name,
-				value: averageStats['eliminations_avg'],
-				rank: `${ranks[2].rank}%`
-			},
-			{
-				key: ranks[3].name,
-				value: averageStats['final_blows_avg'],
-				rank: `${ranks[3].rank}%`
-			},
-			{
-				key: ranks[4].name,
-				value: averageStats['objective_kills_avg'],
-				rank: `${ranks[4].rank}%`
-			},
-			{
-				key: ranks[5].name,
-				value: hoursToTime(averageStats['objective_time_avg']),
-				rank: `${ranks[5].rank}%`
-			},
-			{
-				key: ranks[6].name,
-				value: averageStats['solo_kills_avg'],
-				rank: `${ranks[6].rank}%`
-			},
-			{
-				key: ranks[7].name,
-				value: hoursToTime(averageStats['time_spent_on_fire_avg']),
-				rank: `${ranks[7].rank}%`
-			},
-			{
-				key: ranks[8].name,
-				value: moreStats['kpd'],
-				rank: `${ranks[8].rank}%`
-			},
-			{
-				key: ranks[9].name,
-				value: overallStats['win_rate'],
-				rank: `${ranks[9].rank}%`
-			}
-		];
+	const tempStats = [
+		{
+			key: ranks[0].name,
+			value: ranks[0].value,
+			rank: `${ranks[0].rank}%`
+		},
+		{
+			key: ranks[1].name,
+			value: ranks[1].value,
+			rank: `${ranks[1].rank}%`
+		},
+		{
+			key: ranks[2].name,
+			value: ranks[2].value,
+			rank: `${ranks[2].rank}%`
+		},
+		{
+			key: ranks[3].name,
+			value: ranks[3].value,
+			rank: `${ranks[3].rank}%`
+		},
+		{
+			key: ranks[4].name,
+			value: ranks[4].value,
+			rank: `${ranks[4].rank}%`
+		},
+		{
+			key: ranks[5].name,
+			value: ranks[5].value,
+			rank: `${ranks[5].rank}%`
+		},
+		{
+			key: ranks[6].name,
+			value: ranks[6].value,
+			rank: `${ranks[6].rank}%`
+		},
+		{
+			key: ranks[7].name,
+			value: ranks[7].value,
+			rank: `${ranks[7].rank}%`
+		},
+		{
+			key: ranks[8].name,
+			value: ranks[8].value,
+			rank: `${ranks[8].rank}%`
+		},
+		{
+			key: ranks[9].name,
+			value: ranks[9].value,
+			rank: `${ranks[9].rank}%`
+		}
+	];
 
 	// First group
 	const line0 = new fabric.Rect({
@@ -443,76 +389,83 @@ module.exports.generate = async function(data, pretty_bt, ranks, mode, user_id, 
 	const stream = canvas.createJPEGStream({
 		quality: 90
 	});
+
 	console.log('Image rendered!');
-	let temp = [];
 
-	console.log('Stream started!');
-	stream.on('data', function (chunk) {
-		temp.push(chunk);
-		console.log('Streaming...');
-	});
+	return new Promise(function (resolve, reject) {
+		let temp = [];
 
-	stream.on('end', async function () {
-		// Clean canvas to prevent memory leak!
-		canvas.clear();
+		console.log('Stream started!');
+		stream.on('data', function (chunk) {
+			temp.push(chunk);
+			console.log('Streaming...');
+		});
 
-		// Create image buffer to send it directly to Telegram
-		const buffer = Buffer.concat(temp);
-		console.log('Stream ended, starting sending!');
+		stream.on('end', async function () {
+			// Clean canvas to prevent memory leak!
+			canvas.clear();
 
-		// Getting deletehash from DB and removing image from Imgur (yes, we save their space to keep it free)
-		await r.db('overwatch').table('users').get(user_id).pluck(
-			[
-				'imgur_competitive_deletehash',
-				'imgur_quickplay_deletehash'
-			])
-			.then(function (res) {
-				if (mode === 'quickplay')
-					return imgur.deleteImage(res.imgur_quickplay_deletehash);
-				else if (mode === 'competitive')
-					return imgur.deleteImage(res.imgur_competitive_deletehash);
-			})
+			// Create image buffer to send it directly to Telegram
+			const buffer = Buffer.concat(temp);
+			console.log('Stream ended, starting sending!');
 
-			.then(function(status) {
-				console.log(status);
-			})
+			// Getting deletehash from DB and removing image from Imgur (yes, we save their space to keep it free)
+			await r.db('overwatch').table('users').get(user_id).pluck(
+				[
+					'imgur_competitive_deletehash',
+					'imgur_quickplay_deletehash'
+				])
+				.then(function (res) {
+					if (mode === 'quickplay')
+						return imgur.deleteImage(res.imgur_quickplay_deletehash);
+					else if (mode === 'competitive')
+						return imgur.deleteImage(res.imgur_competitive_deletehash);
+				})
 
-			.catch(function (error) {
-				console.warn(error);
-			});
+				.then(function(status) {
+					console.log(status);
+				})
 
-		// Uploading new image and saving link and deletehash
-		await imgur.uploadBase64(buffer.toString('base64'))
-			.then(function (res) {
-				console.log(res);
-				let imgur_competitive_link, imgur_competitive_deletehash,
-					imgur_quickplay_link, imgur_quickplay_deletehash;
+				.catch(function (error) {
+					console.warn(error);
+					reject(error);
+				});
 
-				if (mode === 'quickplay') {
-					imgur_quickplay_link = res.data.link;
-					imgur_quickplay_deletehash = res.data.deletehash;
-				} else if (mode === 'competitive') {
-					imgur_competitive_link = res.data.link;
-					imgur_competitive_deletehash = res.data.deletehash;
-				}
+			// Uploading new image and saving link and deletehash
+			await imgur.uploadBase64(buffer.toString('base64'))
+				.then(function (res) {
+					console.log(res);
+					let imgur_competitive_link, imgur_competitive_deletehash,
+						imgur_quickplay_link, imgur_quickplay_deletehash;
 
-				return r.db('overwatch').table('users').get(user_id)
-					.update({
-						imgur_competitive_link: imgur_competitive_link,
-						imgur_competitive_deletehash: imgur_competitive_deletehash,
-						imgur_quickplay_link: imgur_quickplay_link,
-						imgur_quickplay_deletehash: imgur_quickplay_deletehash,
-					});
-			})
+					if (mode === 'quickplay') {
+						imgur_quickplay_link = res.data.link;
+						imgur_quickplay_deletehash = res.data.deletehash;
+					} else if (mode === 'competitive') {
+						imgur_competitive_link = res.data.link;
+						imgur_competitive_deletehash = res.data.deletehash;
+					}
 
-			.then(function (status) {
-				console.log(status);
-			})
+					return r.db('overwatch').table('users').get(user_id)
+						.update({
+							imgur_competitive_link: imgur_competitive_link,
+							imgur_competitive_deletehash: imgur_competitive_deletehash,
+							imgur_quickplay_link: imgur_quickplay_link,
+							imgur_quickplay_deletehash: imgur_quickplay_deletehash,
+						});
+				})
 
-			.catch(function (error) {
-				console.warn(error.message);
-				bot.sendMessage(chat_id,
-					`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>`, parse_html);
-			})
+				.then(function (status) {
+					resolve(status);
+					console.log(status);
+				})
+
+				.catch(function (error) {
+					console.warn(error.message);
+					bot.sendMessage(chat_id,
+						`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>`, parse_html);
+					reject(error);
+				})
+		});
 	});
 };

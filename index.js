@@ -252,9 +252,9 @@ function getRank(obj) {
 			.then(function (res) {
 				let value;
 				if (obj.name.indexOf('time') > -1)
-					value = (parseFloat(res.value) * 3600).toFixed();
+					value = hoursToTime(parseFloat(res.value));
 				else
-					value = Number(res.value.toFixed(2));
+					value = parseFloat(res.value);
 
 				const rank = Number((100 - (1 - (res.position / res.count)) * 100).toFixed(2));
 
@@ -296,6 +296,16 @@ bot.onText(/^\/generate/, async function (msg) {
 
 		getRank({
 			id: id, mode: 'competitive', statsType: 'average_stats',
+			name: 'healing_done_avg', readableName: 'ОБЪЕМ ИСЦЕЛЕНИЯ'
+		}),
+
+		getRank({
+			id: id, mode: 'competitive', statsType: 'average_stats',
+			name: 'melee_final_blows_avg', readableName: 'СМЕРТ. УДАРОВ В РУКОП.'
+		}),
+
+		getRank({
+			id: id, mode: 'competitive', statsType: 'average_stats',
 			name: 'objective_kills_avg', readableName: 'УБИЙСТВ У ОБЪЕКТОВ'
 		}),
 
@@ -313,16 +323,7 @@ bot.onText(/^\/generate/, async function (msg) {
 			id: id, mode: 'competitive', statsType: 'average_stats',
 			name: 'time_spent_on_fire_avg', readableName: 'ВРЕМЯ В УДАРЕ'
 		}),
-
-		getRank({
-			id: id, mode: 'competitive', statsType: 'game_stats',
-			name: 'kpd', readableName: 'УБИЙСТВ/СМЕРТЕЙ'
-		}),
-
-		getRank({
-			id: id, mode: 'competitive', statsType: 'overall_stats',
-			name: 'win_rate', readableName: 'ВИНРЕЙТ, %'
-		})
+		'competitive'
 	];
 
 	const quickplayRanks = [
@@ -348,16 +349,6 @@ bot.onText(/^\/generate/, async function (msg) {
 
 		getRank({
 			id: id, mode: 'quickplay', statsType: 'average_stats',
-			name: 'healing_done_avg', readableName: 'ОБЪЕМ ИСЦЕЛЕНИЯ'
-		}),
-
-		getRank({
-			id: id, mode: 'quickplay', statsType: 'average_stats',
-			name: 'melee_final_blows_avg', readableName: 'СМЕРТ. УДАРОВ В РУКОП.'
-		}),
-
-		getRank({
-			id: id, mode: 'quickplay', statsType: 'average_stats',
 			name: 'objective_kills_avg', readableName: 'УБИЙСТВ У ОБЪЕКТОВ'
 		}),
 
@@ -374,36 +365,60 @@ bot.onText(/^\/generate/, async function (msg) {
 		getRank({
 			id: id, mode: 'quickplay', statsType: 'average_stats',
 			name: 'time_spent_on_fire_avg', readableName: 'ВРЕМЯ В УДАРЕ'
-		})
+		}),
+
+		getRank({
+			id: id, mode: 'quickplay', statsType: 'game_stats',
+			name: 'kpd', readableName: 'УБИЙСТВ/СМЕРТЕЙ'
+		}),
+
+		getRank({
+			id: id, mode: 'quickplay', statsType: 'overall_stats',
+			name: 'win_rate', readableName: 'ВИНРЕЙТ, %'
+		}),
+		'quickplay'
 	];
 
 	const msg_status = await bot.sendMessage(msg.chat.id, 'Пожалуйста подождите, идет генерация...');
 
-	Promise.all([Promise.all(quickplayRanks), Promise.all(competitiveRanks)])
-		.then(async function (res) {
-			let text = 'Процесс генерации:\n<pre>';
-			const startTotal = new Date().getTime();
-			for (let i in res) {
-				if (res.hasOwnProperty(i)) {
-					const startCicle = new Date().getTime();
-					try {
-						await image.generate(user.profile, user.pretty_bt, res[i], mode[i], msg.from.id, msg.chat.id);
-						text += `${(new Date().getTime()) - startCicle} ms: ${mode[i]} done!️\n`;
-					} catch (error) {
-						console.warn(error.message);
-						text += `${(new Date().getTime()) - startCicle} ms: ${mode[i]} failed!\n`;
-					}
-					bot.editMessageText(`${text}Total: ${(new Date().getTime()) - startTotal} ms</pre>`,
-						{message_id: msg_status.message_id, chat_id: msg.chat.id, parse_mode: 'HTML'});
-				}
-			}
-		})
+	let competitive, quickplay, tempRanks = [];
 
-		.catch(function (error) {
-			console.warn(error.message);
-			bot.editMessageText(`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>`,
+	try {
+		competitive = await Promise.all(competitiveRanks);
+		tempRanks.push(competitive);
+	} catch(error) {
+		console.warn(error.message);
+	}
+
+	try {
+		quickplay = await Promise.all(quickplayRanks);
+		tempRanks.push(quickplay);
+	} catch(error) {
+		console.warn(error.message);
+	}
+
+	let text = 'Процесс генерации:\n<pre>';
+	const startTotal = new Date().getTime();
+	for (let i in tempRanks) {
+		if (tempRanks.hasOwnProperty(i)) {
+			const startCicle = new Date().getTime();
+			try {
+				const status = await image.generate(user.profile, user.pretty_bt, tempRanks[i], msg.from.id, msg.chat.id);
+				text += `${(new Date().getTime()) - startCicle} ms: ${tempRanks[i][tempRanks[i].length - 1]} done!️\n`;
+			} catch (error) {
+				console.warn(error.message);
+				text += `${(new Date().getTime()) - startCicle} ms: ${tempRanks[i][tempRanks[i].length - 1]} failed!\n`;
+			}
+			bot.editMessageText(`${text}Total: ${(new Date().getTime()) - startTotal} ms</pre>`,
 				{message_id: msg_status.message_id, chat_id: msg.chat.id, parse_mode: 'HTML'});
-		});
+		}
+	}
+
+	/*.catch(function (error) {
+		console.warn(error.message);
+		bot.editMessageText(`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>`,
+			{message_id: msg_status.message_id, chat_id: msg.chat.id, parse_mode: 'HTML'});
+	});*/
 });
 
 bot.onText(/^\/show (.+)|^\/show/, async function (msg, match) {
