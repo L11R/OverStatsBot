@@ -256,12 +256,14 @@ function getRank(obj) {
 				else
 					value = parseFloat(res.value);
 
-				const rank = Number((100 - (1 - (res.position / res.count)) * 100).toFixed(2));
+				const rank = (Number((100 - (1 - (res.position / res.count)) * 100).toFixed(2))).toString() + '%';
 
 				resolve({name: obj.readableName, value: value, rank: rank, count: res.count, position: res.position});
 			})
 			.catch(function (error) {
-				reject(error);
+				// NEED TESTING
+				resolve({name: obj.readableName, value: "НЕИЗВ.", rank: 'НЕИЗВЕСТНО', count: null, position: null});
+				//reject(error);
 			});
 });
 }

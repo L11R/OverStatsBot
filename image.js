@@ -88,7 +88,8 @@ module.exports.generate = async function(data, pretty_bt, ranks, user_id, chat_i
 	canvas.contextContainer.addFont(futura);
 
 	console.log('Image generation started!');
-	// Обводка и белый фон
+
+	// Background with heroes colors gradient
 	let outline = new fabric.Rect({
 		width: canvas.width,
 		height: canvas.height
@@ -107,6 +108,7 @@ module.exports.generate = async function(data, pretty_bt, ranks, user_id, chat_i
 
 	canvas.add(outline);
 
+	// White background
 	const background = new fabric.Rect({
 		left: 10, top: 10,
 		fill: 'white',
@@ -119,7 +121,7 @@ module.exports.generate = async function(data, pretty_bt, ranks, user_id, chat_i
 
 	canvas.add(background);
 
-	// Battletag и уровень/ранк
+	// Battletag and level/rank
 	const battletag = new fabric.Text(pretty_bt, {
 		left: 20, top: 20,
 		fill: '#555',
@@ -133,7 +135,10 @@ module.exports.generate = async function(data, pretty_bt, ranks, user_id, chat_i
 	if (mode === 'quickplay')
 		tempValue = level.toString();
 	else if (mode === 'competitive')
-		tempValue = stats.comprank.toString();
+		if (stats.comprank === null)
+			tempValue = 'НЕИЗВЕСТНО';
+		else
+			tempValue = stats.comprank.toString();
 
 	const rank_width = bignoodle_ot.getAdvanceWidth(tempValue, 50);
 
@@ -162,7 +167,7 @@ module.exports.generate = async function(data, pretty_bt, ranks, user_id, chat_i
 	canvas.add(rect);
 	canvas.add(value);
 
-	// Картинки героев
+	// Heroes pics
 	for (let i = 0; i < 5; i++) {
 		function addImage() {
 			return new Promise(function (resolve) {
@@ -212,7 +217,7 @@ module.exports.generate = async function(data, pretty_bt, ranks, user_id, chat_i
 
 					let timeTemp;
 					if (heroesArr[i].timePlayed < 1)
-						timeTemp = `${heroesArr[i].timePlayed * 60}M`;
+						timeTemp = `${(heroesArr[i].timePlayed * 60).toFixed()}M`;
 					else
 						timeTemp = `${heroesArr[i].timePlayed.toFixed()}H`;
 
@@ -236,57 +241,57 @@ module.exports.generate = async function(data, pretty_bt, ranks, user_id, chat_i
 		await addImage();
 	}
 
-	// Статы
+	// Stats
 	const tempStats = [
 		{
 			key: ranks[0].name,
 			value: ranks[0].value,
-			rank: `${ranks[0].rank}%`
+			rank: ranks[0].rank
 		},
 		{
 			key: ranks[1].name,
 			value: ranks[1].value,
-			rank: `${ranks[1].rank}%`
+			rank: ranks[1].rank
 		},
 		{
 			key: ranks[2].name,
 			value: ranks[2].value,
-			rank: `${ranks[2].rank}%`
+			rank: ranks[2].rank
 		},
 		{
 			key: ranks[3].name,
 			value: ranks[3].value,
-			rank: `${ranks[3].rank}%`
+			rank: ranks[3].rank
 		},
 		{
 			key: ranks[4].name,
 			value: ranks[4].value,
-			rank: `${ranks[4].rank}%`
+			rank: ranks[4].rank
 		},
 		{
 			key: ranks[5].name,
 			value: ranks[5].value,
-			rank: `${ranks[5].rank}%`
+			rank: ranks[5].rank
 		},
 		{
 			key: ranks[6].name,
 			value: ranks[6].value,
-			rank: `${ranks[6].rank}%`
+			rank: ranks[6].rank
 		},
 		{
 			key: ranks[7].name,
 			value: ranks[7].value,
-			rank: `${ranks[7].rank}%`
+			rank: ranks[7].rank
 		},
 		{
 			key: ranks[8].name,
 			value: ranks[8].value,
-			rank: `${ranks[8].rank}%`
+			rank: ranks[8].rank
 		},
 		{
 			key: ranks[9].name,
 			value: ranks[9].value,
-			rank: `${ranks[9].rank}%`
+			rank: ranks[9].rank
 		}
 	];
 
@@ -343,7 +348,7 @@ module.exports.generate = async function(data, pretty_bt, ranks, user_id, chat_i
 			fontSize: 50
 		});
 
-		const rank0 = new fabric.Text(tempStats[column].rank.toString(), {
+		const rank0 = new fabric.Text(tempStats[column].rank, {
 			left: 20 + 155 * column,
 			top: 410 + 100 * 0,
 			fill: 'grey',
@@ -428,7 +433,6 @@ module.exports.generate = async function(data, pretty_bt, ranks, user_id, chat_i
 
 				.catch(function (error) {
 					console.warn(error);
-					reject(error);
 				});
 
 			// Uploading new image and saving link and deletehash
@@ -456,14 +460,12 @@ module.exports.generate = async function(data, pretty_bt, ranks, user_id, chat_i
 				})
 
 				.then(function (status) {
-					resolve(status);
 					console.log(status);
+					resolve(status);
 				})
 
 				.catch(function (error) {
 					console.warn(error.message);
-					bot.sendMessage(chat_id,
-						`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>`, parse_html);
 					reject(error);
 				})
 		});
