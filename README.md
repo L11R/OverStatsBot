@@ -27,6 +27,7 @@ client_id from Imgur [here](https://api.imgur.com/oauth2/addclient) (anonymous u
 - [x] Add inline mode support for sharing profile pictures
 - [ ] Localization on other languages
 - [ ] Image generation for dedicated heroes
+- [ ] Ability to use two and more account at once
 - [ ] Ability to save profile snapshots everyday (for example) to plot some graphs
 
 **Feel free to commit and write me PM [here](https://t.me/kraso)!**
