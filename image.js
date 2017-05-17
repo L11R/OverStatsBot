@@ -415,7 +415,7 @@ module.exports.generate = async function(data, pretty_bt, ranks, user_id, chat_i
 			console.log('Stream ended, starting sending!');
 
 			// Getting deletehash from DB and removing image from Imgur (yes, we save their space to keep it free)
-			await r.db('overwatch').table('users').get(user_id).pluck(
+			await r.table('users').get(user_id).pluck(
 				[
 					'imgur_competitive_deletehash',
 					'imgur_quickplay_deletehash'
@@ -450,7 +450,7 @@ module.exports.generate = async function(data, pretty_bt, ranks, user_id, chat_i
 						imgur_competitive_deletehash = res.data.deletehash;
 					}
 
-					return r.db('overwatch').table('users').get(user_id)
+					return r.table('users').get(user_id)
 						.update({
 							imgur_competitive_link: imgur_competitive_link,
 							imgur_competitive_deletehash: imgur_competitive_deletehash,

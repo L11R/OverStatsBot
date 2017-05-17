@@ -4,7 +4,7 @@
 module.exports = function () {
 	// Основной цикл для обработки inline-запросов
 	bot.on('inline_query', function (inlineQuery) {
-		r.db('overwatch').table('users').get(inlineQuery.from.id).pluck(
+		r.table('users').get(inlineQuery.from.id).pluck(
 			[
 				'imgur_quickplay_link',
 				'imgur_competitive_link',

@@ -9,7 +9,13 @@ global.parse_html = {parse_mode:'HTML'};
 const image = require('./image');
 const TelegramBot = require('node-telegram-bot-api');
 
-global.r = require('rethinkdbdash')();
+global.r = require('rethinkdbdash')({
+	db: 'overwatch',
+	servers: [
+		{host: '192.168.1.2', port: 28015}
+	]
+});
+
 global.R = require('ramda');
 global.bot = new TelegramBot(config.private.token, { polling: true });
 
@@ -34,15 +40,22 @@ global.hoursToTime = function (hours) {
 	return 0;
 };
 
+global.throwError = function (error, id) {
+	console.warn(error.message);
+	bot.sendMessage(id,
+		`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>`, parse_html);
+};
+
 require('./inline')();
 
-bot.onText(/^\/start/, function (msg) {
+bot.onText(/^\/start/i, function (msg) {
 	bot.sendMessage(msg.chat.id, 'Используйте /help, если не знаете что делать.', parse_html);
 });
 
-bot.onText(/^\/help/, function (msg) {
+bot.onText(/^\/help/i, function (msg) {
 	bot.sendMessage(msg.chat.id,
 		'<b>OverStats 2.0</b> <code>by @kraso</code>\n\n' +
+		'/guide - Инструкция по использованию!\n\n' +
 		'/save <b>Example#1337 eu</b> - Сохраняет ваш актуальный профиль в базу c регионом Europe. Доступные варианты: ' +
 		'<code>eu</code>, <code>us</code>, <code>kr</code>, <code>psn</code>, <code>xbl</code>\n' +
 		'/update - Обновляет имеющийся профиль в базе до актуального\n' +
@@ -50,13 +63,36 @@ bot.onText(/^\/help/, function (msg) {
 		'/generate - Генерирует два изображения с вашей статистикой относительно других игроков, использующих бота\n' +
 		'/show <code>[competitive/quickplay]</code> - Отображает эти изображения.\n\n' +
 		'<i>[Временно]</i> /winratetop - Топ-10 в Быстрой Игре по винрейту\n' +
-		'<i>[Временно]</i> /ratingtop - Топ-10 в Соревновательной Игре по рейтингу\n\n' +
-		'Справка: Процент под значениями на изображении означает то, сколько игроков находятся выше вас. ' +
-		'Например, если указано 25%, то это значит, что в боте зарегистрировано ещё 25% процентов игроков, которые имеют ' +
-		'ту или иную характеристику, лучше чем у вас.', parse_html);
+		'<i>[Временно]</i> /ratingtop - Топ-10 в Соревновательной Игре по рейтингу', parse_html);
 });
 
-bot.onText(/^\/save (.+)\s(.+)|^\/save/, async function (msg, match) {
+bot.onText(/^\/guide/i, function (msg) {
+	bot.sendMessage(msg.chat.id,
+		'<b>Как пользоваться ботом</b>\n\n' +
+		'1. Сохраняем профиль командой <code>/save</code> или обновляем уже сохраненный командой <code>/update</code>.\n\n' +
+		'<i>Например:</i> <code>/save Example#1337 eu</code>.\n' +
+		'Данная команда сохранит профиль с Battletag Example#1337 ' +
+		'и регионом Europe. Помимо Европы можно указать Америку и Корею (<code>us</code> и <code>kr</code> ' +
+		'соответственно). Если вы играете с приставки, то вместо региона нужно указать вашу платформу: ' +
+		'<code>psn</code> (PS4) или <code>xbl</code> (Xbox One).\n\n' +
+		'2. Генерируем изображения командой <code>/generate</code>. ' +
+		'Проследите за тем, чтобы генерация прошла успешно.\n\n' +
+		'3. Отображаем сгенерированные изображения, используя один из методов:\n\n' +
+		'— Используйте inline-режим аналогичный ботам @gif, @vote, @like и другим.\n' +
+		'— Используйте команду <code>/show [competitive/quickplay]</code>.\n\n' +
+		'<i>Например:</i> <code>/show quickplay</code>.\n' +
+		'Данная команда отобразит статистику по быстрой игре.\n\n' +
+		'<b>Справка:</b> Процентное значение на изображении означает то, сколько игроков находятся выше вас. ' +
+		'Например, если указано 25%, то это значит, что в боте зарегистрировано ещё 25% процентов игроков, которые имеют ' +
+		'указанную характеристику, лучше чем у вас.\n\n' +
+		'По всем вопросам пишите <a href="https://t.me/kraso">мне</a>.',
+		{
+			parse_mode: 'HTML',
+			disable_web_page_preview: true
+		});
+});
+
+bot.onText(/^\/save (.+)\s(.+)|^\/save/i, async function (msg, match) {
 	let pretty_bt, battletag, platform, param;
 
 	if (match[1] === undefined || match[2] === undefined)
@@ -87,7 +123,7 @@ bot.onText(/^\/save (.+)\s(.+)|^\/save/, async function (msg, match) {
 		else
 			param = match[2];
 
-		r.db('overwatch').table('users')
+		r.table('users')
 			.insert(
 				{
 					id: msg.from.id,
@@ -120,9 +156,9 @@ bot.onText(/^\/save (.+)\s(.+)|^\/save/, async function (msg, match) {
 	}
 });
 
-bot.onText(/^\/update/, async function (msg) {
+bot.onText(/^\/update/i, async function (msg) {
 	const msg_status = await bot.sendMessage(msg.chat.id, 'Пожалуйста подождите, идет обновление...');
-	const user = await r.db('overwatch').table('users').get(msg.from.id);
+	const user = await r.table('users').get(msg.from.id);
 
 	let profile;
 	try {
@@ -137,7 +173,7 @@ bot.onText(/^\/update/, async function (msg) {
 	}
 
 
-	r.db('overwatch').table('users').get(msg.from.id)
+	r.table('users').get(msg.from.id)
 		.update(
 			// Условие
 			r.branch(
@@ -169,8 +205,8 @@ bot.onText(/^\/update/, async function (msg) {
 		});
 });
 
-bot.onText(/^\/delete/, function (msg) {
-	r.db('overwatch').table('users').get(msg.from.id)
+bot.onText(/^\/delete/i, function (msg) {
+	r.table('users').get(msg.from.id)
 		.delete()
 
 		.then(function (status) {
@@ -188,8 +224,8 @@ bot.onText(/^\/delete/, function (msg) {
 		});
 });
 
-bot.onText(/^\/winratetop/, function (msg) {
-	r.db('overwatch').table('users')
+bot.onText(/^\/winratetop/i, function (msg) {
+	r.table('users')
 		.orderBy(r.desc(r.row('profile')('stats')('quickplay')('overall_stats')('win_rate')))
 		.limit(10)
 		.then(function (users) {
@@ -208,8 +244,8 @@ bot.onText(/^\/winratetop/, function (msg) {
 		});
 });
 
-bot.onText(/^\/ratingtop/, function (msg) {
-	r.db('overwatch').table('users')
+bot.onText(/^\/ratingtop/i, function (msg) {
+	r.table('users')
 		.orderBy(r.desc(r.row('profile')('stats')('competitive')('overall_stats')('comprank')))
 		.limit(10)
 		.then(function (users) {
@@ -229,22 +265,39 @@ bot.onText(/^\/ratingtop/, function (msg) {
 });
 
 function getRank(obj) {
+	if (obj.hero === undefined)
+		obj.hero = false;
+
 	if (obj.asc === undefined)
 		obj.asc = false;
 
 	return new Promise(function(resolve, reject) {
 		r.expr({
 			// Значение поля
-			value: r.db('overwatch').table('users').get(obj.id)('profile')('stats')(obj.mode)(obj.statsType)(obj.name),
+			value: r.branch(
+				r.expr(obj.hero).eq(false),
+				r.table('users').get(obj.id)('profile')('stats')(obj.mode)(obj.statsType)(obj.name),
+				r.table('users').get(obj.id)('profile')('heroes')('stats')(obj.mode)(obj.hero)(obj.statsType)(obj.name)
+			),
 			// Общее число записей в таблице.
-			count: r.db('overwatch').table('users').count(),
+			count: r.table('users').count(),
 			// Позиция в топе по нужному параметру в зависимости от условия по возрастанию или убыванию.
 			position: r.branch(
-				r.expr(obj.asc).eq(true),
-				r.db('overwatch').table('users')
-					.orderBy(r.asc(r.row('profile')('stats')(obj.mode)(obj.statsType)(obj.name))),
-				r.db('overwatch').table('users')
-					.orderBy(r.desc(r.row('profile')('stats')(obj.mode)(obj.statsType)(obj.name)))
+				r.expr(obj.hero).eq(false),
+				r.branch(
+					r.expr(obj.asc).eq(true),
+					r.table('users')
+						.orderBy(r.asc(r.row('profile')('stats')(obj.mode)(obj.statsType)(obj.name))),
+					r.table('users')
+						.orderBy(r.desc(r.row('profile')('stats')(obj.mode)(obj.statsType)(obj.name)))
+				),
+				r.branch(
+					r.expr(obj.asc).eq(true),
+					r.table('users')
+						.orderBy(r.asc(r.row('profile')('heroes')('stats')(obj.mode)(obj.hero)(obj.statsType)(obj.name))),
+					r.table('users')
+						.orderBy(r.desc(r.row('profile')('heroes')('stats')(obj.mode)(obj.hero)(obj.statsType)(obj.name)))
+				)
 			)
 				.offsetsOf(r.row('id').eq(obj.id))
 				.nth(0)
@@ -261,123 +314,94 @@ function getRank(obj) {
 				resolve({name: obj.readableName, value: value, rank: rank, count: res.count, position: res.position});
 			})
 			.catch(function (error) {
-				// NEED TESTING
+				console.warn(error.message);
 				resolve({name: obj.readableName, value: "НЕИЗВ.", rank: 'НЕИЗВЕСТНО', count: null, position: null});
-				//reject(error);
 			});
-});
+	});
 }
 
-bot.onText(/^\/generate/, async function (msg) {
+function getCompetitiveRank(id, name, readableName, statsType, asc) {
+	if (asc === undefined)
+		asc = false;
 
+	if (statsType === undefined)
+		statsType = 'average_stats';
+
+	return getRank({
+		id: id, mode: 'competitive', statsType: 'average_stats',
+		name: name, readableName: readableName, asc: asc
+	});
+}
+
+function getQuickplayRank(id, name, readableName, statsType, asc) {
+	if (asc === undefined)
+		asc = false;
+
+	if (statsType === undefined)
+		statsType = 'average_stats';
+
+	return getRank({
+		id: id, mode: 'quickplay', statsType: statsType,
+		name: name, readableName: readableName, asc: asc
+	});
+}
+
+function getHeroCompetitiveRank(id, name, readableName, hero, statsType, asc) {
+	if (asc === undefined)
+		asc = false;
+
+	if (statsType === undefined)
+		statsType = 'average_stats';
+
+	return getRank({
+		id: id, mode: 'competitive', hero: hero, statsType: statsType,
+		name: name, readableName: readableName, asc: asc
+	});
+}
+
+function getHeroQuickplayRank(id, name, readableName, hero, statsType, asc) {
+	if (asc === undefined)
+		asc = false;
+
+	if (statsType === undefined)
+		statsType = 'average_stats';
+
+	return getRank({
+		id: id, mode: 'quickplay', hero: hero, statsType: statsType,
+		name: name, readableName: readableName, asc: asc
+	});
+}
+
+bot.onText(/^\/generate/i, async function (msg) {
 	const id = msg.from.id;
-	const user = await r.db('overwatch').table('users').get(id);
-
-	const mode = ['competitive', 'quickplay'];
+	const user = await r.table('users').get(id);
 
 	const competitiveRanks = [
-		getRank({
-			id: id, mode: 'competitive', statsType: 'average_stats',
-			name: 'damage_done_avg', readableName: 'НАНЕСЕНО УРОНА'
-		}),
-
-		getRank({
-			id: id, mode: 'competitive', statsType: 'average_stats',
-			name: 'deaths_avg', readableName: 'СМЕРТЕЙ', asc: true
-		}),
-
-		getRank({
-			id: id, mode: 'competitive', statsType: 'average_stats',
-			name: 'eliminations_avg', readableName: 'УБИЙСТВ'
-		}),
-
-		getRank({
-			id: id, mode: 'competitive', statsType: 'average_stats',
-			name: 'final_blows_avg', readableName: 'СМЕРТЕЛЬНЫХ УДАРОВ'
-		}),
-
-		getRank({
-			id: id, mode: 'competitive', statsType: 'average_stats',
-			name: 'healing_done_avg', readableName: 'ОБЪЕМ ИСЦЕЛЕНИЯ'
-		}),
-
-		getRank({
-			id: id, mode: 'competitive', statsType: 'average_stats',
-			name: 'melee_final_blows_avg', readableName: 'СМЕРТ. УДАРОВ В РУКОП.'
-		}),
-
-		getRank({
-			id: id, mode: 'competitive', statsType: 'average_stats',
-			name: 'objective_kills_avg', readableName: 'УБИЙСТВ У ОБЪЕКТОВ'
-		}),
-
-		getRank({
-			id: id, mode: 'competitive', statsType: 'average_stats',
-			name: 'objective_time_avg', readableName: 'ВЫПОЛНЕНИЕ ЗАДАЧ'
-		}),
-
-		getRank({
-			id: id, mode: 'competitive', statsType: 'average_stats',
-			name: 'solo_kills_avg', readableName: 'ОДИНОЧНЫХ УБИЙСТВ'
-		}),
-
-		getRank({
-			id: id, mode: 'competitive', statsType: 'average_stats',
-			name: 'time_spent_on_fire_avg', readableName: 'ВРЕМЯ В УДАРЕ'
-		}),
+		getCompetitiveRank(id, 'damage_done_avg', 'НАНЕСЕНО УРОНА'),
+		getCompetitiveRank(id, 'deaths_avg', 'СМЕРТЕЙ', undefined, true),
+		getCompetitiveRank(id, 'eliminations_avg', 'УБИЙСТВ'),
+		getCompetitiveRank(id, 'final_blows_avg', 'СМЕРТЕЛЬНЫХ УДАРОВ'),
+		getCompetitiveRank(id, 'healing_done_avg', 'ОБЪЕМ ИСЦЕЛЕНИЯ'),
+		getCompetitiveRank(id, 'melee_final_blows_avg', 'СМЕРТ. УДАРОВ В РУКОП.'),
+		getCompetitiveRank(id, 'objective_kills_avg', 'УБИЙСТВ У ОБЪЕКТОВ'),
+		getCompetitiveRank(id, 'objective_time_avg', 'ВЫПОЛНЕНИЕ ЗАДАЧ'),
+		getCompetitiveRank(id, 'solo_kills_avg', 'ОДИНОЧНЫХ УБИЙСТВ'),
+		getCompetitiveRank(id, 'time_spent_on_fire_avg', 'ВРЕМЯ В УДАРЕ'),
 		'competitive'
 	];
 
 	const quickplayRanks = [
-		getRank({
-			id: id, mode: 'quickplay', statsType: 'average_stats',
-			name: 'damage_done_avg', readableName: 'НАНЕСЕНО УРОНА'
-		}),
-
-		getRank({
-			id: id, mode: 'quickplay', statsType: 'average_stats',
-			name: 'deaths_avg', readableName: 'СМЕРТЕЙ', asc: true
-		}),
-
-		getRank({
-			id: id, mode: 'quickplay', statsType: 'average_stats',
-			name: 'eliminations_avg', readableName: 'УБИЙСТВ'
-		}),
-
-		getRank({
-			id: id, mode: 'quickplay', statsType: 'average_stats',
-			name: 'final_blows_avg', readableName: 'СМЕРТЕЛЬНЫХ УДАРОВ'
-		}),
-
-		getRank({
-			id: id, mode: 'quickplay', statsType: 'average_stats',
-			name: 'objective_kills_avg', readableName: 'УБИЙСТВ У ОБЪЕКТОВ'
-		}),
-
-		getRank({
-			id: id, mode: 'quickplay', statsType: 'average_stats',
-			name: 'objective_time_avg', readableName: 'ВЫПОЛНЕНИЕ ЗАДАЧ'
-		}),
-
-		getRank({
-			id: id, mode: 'quickplay', statsType: 'average_stats',
-			name: 'solo_kills_avg', readableName: 'ОДИНОЧНЫХ УБИЙСТВ'
-		}),
-
-		getRank({
-			id: id, mode: 'quickplay', statsType: 'average_stats',
-			name: 'time_spent_on_fire_avg', readableName: 'ВРЕМЯ В УДАРЕ'
-		}),
-
-		getRank({
-			id: id, mode: 'quickplay', statsType: 'game_stats',
-			name: 'kpd', readableName: 'УБИЙСТВ/СМЕРТЕЙ'
-		}),
-
-		getRank({
-			id: id, mode: 'quickplay', statsType: 'overall_stats',
-			name: 'win_rate', readableName: 'ВИНРЕЙТ, %'
-		}),
+		//getHeroQuickplayRank(id, 'damage_blocked_average', 'УРОНА ЗАБЛОКИРОВАНО', 'dva'),
+		getQuickplayRank(id, 'damage_done_avg', 'НАНЕСЕНО УРОНА'),
+		getQuickplayRank(id, 'deaths_avg', 'СМЕРТЕЙ', undefined, true),
+		getQuickplayRank(id, 'eliminations_avg', 'УБИЙСТВ'),
+		getQuickplayRank(id, 'final_blows_avg', 'СМЕРТЕЛЬНЫХ УДАРОВ'),
+		getQuickplayRank(id, 'objective_kills_avg', 'УБИЙСТВ У ОБЪЕКТОВ'),
+		getQuickplayRank(id, 'objective_time_avg', 'ВЫПОЛНЕНИЕ ЗАДАЧ'),
+		getQuickplayRank(id, 'solo_kills_avg', 'ОДИНОЧНЫХ УБИЙСТВ'),
+		getQuickplayRank(id, 'time_spent_on_fire_avg', 'ВРЕМЯ В УДАРЕ'),
+		getQuickplayRank(id, 'kpd', 'УБИЙСТВ/СМЕРТЕЙ', 'game_stats'),
+		getQuickplayRank(id, 'win_rate', 'ВИНРЕЙТ, %', 'overall_stats'),
 		'quickplay'
 	];
 
@@ -403,47 +427,69 @@ bot.onText(/^\/generate/, async function (msg) {
 	const startTotal = new Date().getTime();
 	for (let i in tempRanks) {
 		if (tempRanks.hasOwnProperty(i)) {
-			const startCicle = new Date().getTime();
+			const startCycle = new Date().getTime();
 			try {
-				const status = await image.generate(user.profile, user.pretty_bt, tempRanks[i], msg.from.id, msg.chat.id);
-				text += `${(new Date().getTime()) - startCicle} ms: ${tempRanks[i][tempRanks[i].length - 1]} done!️\n`;
+				await image.generate(user.profile, user.pretty_bt, tempRanks[i], msg.from.id, msg.chat.id);
+				text += `${(new Date().getTime()) - startCycle} ms: ${tempRanks[i][tempRanks[i].length - 1]} done!️\n`;
 			} catch (error) {
 				console.warn(error.message);
-				text += `${(new Date().getTime()) - startCicle} ms: ${tempRanks[i][tempRanks[i].length - 1]} failed!\n`;
+				text += `${(new Date().getTime()) - startCycle} ms: ${tempRanks[i][tempRanks[i].length - 1]} failed!\n`;
 			}
 			bot.editMessageText(`${text}Total: ${(new Date().getTime()) - startTotal} ms</pre>`,
 				{message_id: msg_status.message_id, chat_id: msg.chat.id, parse_mode: 'HTML'});
 		}
 	}
-
-	/*.catch(function (error) {
-		console.warn(error.message);
-		bot.editMessageText(`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>`,
-			{message_id: msg_status.message_id, chat_id: msg.chat.id, parse_mode: 'HTML'});
-	});*/
 });
 
-bot.onText(/^\/show (.+)|^\/show/, async function (msg, match) {
+bot.onText(/^\/show (.+)|^\/show/i, async function (msg, match) {
 	if (match[1] === undefined)
 		bot.sendMessage(msg.chat.id, 'Пример: <code>/show competitive</code>\n' +
 			'Доступные параметры: ' +
 			'<code>quickplay</code>, <code>competitive</code>', parse_html);
 	else {
-		const profile = await r.db('overwatch').table('users').get(msg.from.id);
+		r.table('users')
+			.get(msg.from.id)
 
-		let link;
-		if (match[1] === 'quickplay')
-			link = profile.imgur_quickplay_link;
-		else if (match[1] === 'competitive')
-			link = profile.imgur_competitive_link;
+			.then(function (profile) {
+				if (profile !== null
+					&& profile.imgur_quickplay_link !== null
+					&& profile.imgur_competitive_link !== null) {
 
-		bot.sendPhoto(msg.chat.id, link, {caption: link})
+					let link;
+					if (match[1] === 'quickplay')
+						link = profile.imgur_quickplay_link;
+					else if (match[1] === 'competitive')
+						link = profile.imgur_competitive_link;
+
+					bot.sendPhoto(msg.chat.id, link)
+						.catch(function (error) {
+							throwError(error, msg.chat.id);
+						});
+				} else
+					bot.sendMessage(msg.chat.id, 'Изображения не сгенерированы! /guide');
+			})
+
 			.catch(function (error) {
-				console.warn(error.message);
-				bot.sendMessage(msg.chat.id,
-					`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>`, parse_html);
+				throwError(error, msg.chat.id);
 			});
 	}
+});
+
+bot.onText(/^\/links/, function (msg) {
+	r.table('users').get(msg.from.id)
+		.then(function (res) {
+			let text = '<b>Ссылки на Imgur</b>:\n';
+			if (res.imgur_quickplay_link !== undefined)
+				text += `Быстрая: ${res.imgur_quickplay_link}\n`;
+			if (res.imgur_competitive_link !== undefined)
+				text += `Соревновательная: ${res.imgur_competitive_link}\n`;
+
+			bot.sendMessage(msg.chat.id, text,
+				{
+					parse_mode: 'HTML',
+					disable_web_page_preview: true
+				})
+		});
 });
 
 bot.on('message', function (msg) {
