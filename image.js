@@ -78,9 +78,9 @@ module.exports.generate = async function(data, pretty_bt, ranks, user_id, chat_i
 	const bignoodle_italic_ot = opentype.loadSync('fonts/BigNoodleTooOblique.ttf');
 	const futura_ot = opentype.loadSync('fonts/FuturaPTBold.ttf');
 
-	const bignoodle = new canvas.Font('BigNoodleToo', __dirname + '/fonts/BigNoodleToo.ttf');
-	const bignoodle_italic = new canvas.Font('BigNoodleTooOblique', __dirname + '/fonts/BigNoodleTooOblique.ttf');
-	const futura =  new canvas.Font('Futura', __dirname + '/fonts/FuturaPTBold.ttf');
+	const bignoodle = new canvas.Font('BigNoodleToo.ttf', __dirname + '/fonts/BigNoodleToo.ttf');
+	const bignoodle_italic = new canvas.Font('BigNoodleTooOblique.ttf', __dirname + '/fonts/BigNoodleTooOblique.ttf');
+	const futura =  new canvas.Font('FuturaPTBold.ttf', __dirname + '/fonts/FuturaPTBold.ttf');
 
 	// Fonts activating
 	canvas.contextContainer.addFont(bignoodle);
