@@ -48,12 +48,18 @@ global.throwError = function (error, id) {
 
 require('./inline')();
 
-bot.onText(/^\/start/i, function (msg) {
-	bot.sendMessage(msg.chat.id, 'Используйте /help, если не знаете что делать.', parse_html);
+bot.onText(/^\/start/i, async function (msg) {
+	const msg_status = await bot.sendMessage(msg.chat.id, 'Используйте /help, если не знаете что делать.', parse_html);
+
+	if (msg.chat.id < 0)
+		setTimeout(function () {
+			bot.deleteMessage(msg.chat.id, msg.message_id);
+			bot.deleteMessage(msg_status.chat.id, msg_status.message_id);
+		}, 10000);
 });
 
-bot.onText(/^\/help/i, function (msg) {
-	bot.sendMessage(msg.chat.id,
+bot.onText(/^\/help/i, async function (msg) {
+	const msg_status = await bot.sendMessage(msg.chat.id,
 		'<b>OverStats 2.0</b> <code>by @kraso</code>\n\n' +
 		'/guide - Инструкция по использованию!\n\n' +
 		'/save <b>Example#1337 eu</b> - Сохраняет ваш актуальный профиль в базу c регионом Europe. Доступные варианты: ' +
@@ -64,10 +70,16 @@ bot.onText(/^\/help/i, function (msg) {
 		'/show <code>[competitive/quickplay]</code> - Отображает эти изображения.\n\n' +
 		'<i>[Временно]</i> /winratetop - Топ-10 в Быстрой Игре по винрейту\n' +
 		'<i>[Временно]</i> /ratingtop - Топ-10 в Соревновательной Игре по рейтингу', parse_html);
+
+	if (msg.chat.id < 0)
+		setTimeout(function () {
+			bot.deleteMessage(msg.chat.id, msg.message_id);
+			bot.deleteMessage(msg_status.chat.id, msg_status.message_id);
+		}, 10000);
 });
 
-bot.onText(/^\/guide/i, function (msg) {
-	bot.sendMessage(msg.chat.id,
+bot.onText(/^\/guide/i, async function (msg) {
+	const msg_status = await bot.sendMessage(msg.chat.id,
 		'<b>Как пользоваться ботом</b>\n\n' +
 		'1. Сохраняем профиль командой <code>/save</code> или обновляем уже сохраненный командой <code>/update</code>.\n\n' +
 		'<i>Например:</i> <code>/save Example#1337 eu</code>.\n' +
@@ -90,17 +102,23 @@ bot.onText(/^\/guide/i, function (msg) {
 			parse_mode: 'HTML',
 			disable_web_page_preview: true
 		});
+
+	if (msg.chat.id < 0)
+		setTimeout(function () {
+			bot.deleteMessage(msg.chat.id, msg.message_id);
+			bot.deleteMessage(msg_status.chat.id, msg_status.message_id);
+		}, 10000);
 });
 
 bot.onText(/^\/save (.+)\s(.+)|^\/save/i, async function (msg, match) {
-	let pretty_bt, battletag, platform, param;
+	let pretty_bt, battletag, platform, param, msg_status;
 
 	if (match[1] === undefined || match[2] === undefined)
-		bot.sendMessage(msg.chat.id, 'Пример: <code>/save Example#1337 eu</code>\n' +
+		msg_status = await bot.sendMessage(msg.chat.id, 'Пример: <code>/save Example#1337 eu</code>\n' +
 			'Доступные варианты: ' +
 			'<code>eu</code>, <code>us</code>, <code>kr</code>, <code>psn</code>, <code>xbl</code>', parse_html);
 	else {
-		const msg_status = await bot.sendMessage(msg.chat.id, 'Пожалуйста подождите, идет сохранение...');
+		msg_status = await bot.sendMessage(msg.chat.id, 'Пожалуйста подождите, идет сохранение...');
 		if (match[1].indexOf('-') > -1) {
 			const temp = match[1].split('-');
 			pretty_bt = temp[0] + '#' + temp[1];
@@ -154,6 +172,12 @@ bot.onText(/^\/save (.+)\s(.+)|^\/save/i, async function (msg, match) {
 					{message_id: msg_status.message_id, chat_id: msg.chat.id, parse_mode: 'HTML'});
 			});
 	}
+
+	if (msg.chat.id < 0)
+		setTimeout(function () {
+			bot.deleteMessage(msg.chat.id, msg.message_id);
+			bot.deleteMessage(msg_status.chat.id, msg_status.message_id);
+		}, 10000);
 });
 
 bot.onText(/^\/update/i, async function (msg) {
@@ -203,32 +227,48 @@ bot.onText(/^\/update/i, async function (msg) {
 			bot.editMessageText(`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>`,
 				{message_id: msg_status.message_id, chat_id: msg.chat.id, parse_mode: 'HTML'});
 		});
+
+	if (msg.chat.id < 0)
+		setTimeout(function () {
+			bot.deleteMessage(msg.chat.id, msg.message_id);
+			bot.deleteMessage(msg_status.chat.id, msg_status.message_id);
+		}, 10000);
 });
 
 bot.onText(/^\/delete/i, function (msg) {
+	let msg_status;
+
 	r.table('users').get(msg.from.id)
 		.delete()
 
-		.then(function (status) {
+		.then(async function (status) {
 			console.log(status);
 			if (status.deleted !== 0)
-				bot.sendMessage(msg.chat.id, 'Удалено!');
+				msg_status = await bot.sendMessage(msg.chat.id, 'Удалено!');
 			if (status.skipped !== 0)
-				bot.sendMessage(msg.chat.id, 'Нечего удалять.');
+				msg_status = await bot.sendMessage(msg.chat.id, 'Нечего удалять.');
 		})
 
-		.catch(function (error) {
+		.catch(async function (error) {
 			console.warn(error.message);
-			bot.sendMessage(msg.chat.id,
+			msg_status = await bot.sendMessage(msg.chat.id,
 				`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>` + ' ...', parse_html);
 		});
+
+	if (msg.chat.id < 0)
+		setTimeout(function () {
+			bot.deleteMessage(msg.chat.id, msg.message_id);
+			bot.deleteMessage(msg_status.chat.id, msg_status.message_id);
+		}, 10000);
 });
 
 bot.onText(/^\/winratetop/i, function (msg) {
+	let msg_status;
+
 	r.table('users')
 		.orderBy(r.desc(r.row('profile')('stats')('quickplay')('overall_stats')('win_rate')))
 		.limit(10)
-		.then(function (users) {
+		.then(async function (users) {
 			let top = '<b>Топ-10 по винрейту в Быстрой Игре</b>:\n';
 			for (let i in users) {
 				if (users.hasOwnProperty(i)) {
@@ -240,15 +280,23 @@ bot.onText(/^\/winratetop/i, function (msg) {
 					}
 				}
 			}
-			bot.sendMessage(msg.chat.id, top, parse_html);
+			await bot.sendMessage(msg.chat.id, top, parse_html);
 		});
+
+	if (msg.chat.id < 0)
+		setTimeout(function () {
+			bot.deleteMessage(msg.chat.id, msg.message_id);
+			bot.deleteMessage(msg_status.chat.id, msg_status.message_id);
+		}, 10000);
 });
 
 bot.onText(/^\/ratingtop/i, function (msg) {
+	let msg_status;
+
 	r.table('users')
 		.orderBy(r.desc(r.row('profile')('stats')('competitive')('overall_stats')('comprank')))
 		.limit(10)
-		.then(function (users) {
+		.then(async function (users) {
 			let top = '<b>Топ-10 по рейтингу в Соревновательной Игре</b>:\n';
 			for (let i in users) {
 				if (users.hasOwnProperty(i)) {
@@ -260,8 +308,14 @@ bot.onText(/^\/ratingtop/i, function (msg) {
 					}
 				}
 			}
-			bot.sendMessage(msg.chat.id, top, parse_html);
+			msg_status = bot.sendMessage(msg.chat.id, top, parse_html);
 		});
+
+	if (msg.chat.id < 0)
+		setTimeout(function () {
+			bot.deleteMessage(msg.chat.id, msg.message_id);
+			bot.deleteMessage(msg_status.chat.id, msg_status.message_id);
+		}, 10000);
 });
 
 function getRank(obj) {
@@ -328,7 +382,7 @@ function getCompetitiveRank(id, name, readableName, statsType, asc) {
 		statsType = 'average_stats';
 
 	return getRank({
-		id: id, mode: 'competitive', statsType: 'average_stats',
+		id: id, mode: 'competitive', statsType: statsType,
 		name: name, readableName: readableName, asc: asc
 	});
 }
@@ -435,13 +489,21 @@ bot.onText(/^\/generate/i, async function (msg) {
 				console.warn(error.message);
 				text += `${(new Date().getTime()) - startCycle} ms: ${tempRanks[i][tempRanks[i].length - 1]} failed!\n`;
 			}
-			bot.editMessageText(`${text}Total: ${(new Date().getTime()) - startTotal} ms</pre>`,
+			await bot.editMessageText(`${text}Total: ${(new Date().getTime()) - startTotal} ms</pre>`,
 				{message_id: msg_status.message_id, chat_id: msg.chat.id, parse_mode: 'HTML'});
 		}
 	}
+
+	if (msg.chat.id < 0)
+		setTimeout(function () {
+			bot.deleteMessage(msg.chat.id, msg.message_id);
+			bot.deleteMessage(msg_status.chat.id, msg_status.message_id);
+		}, 10000);
 });
 
 bot.onText(/^\/show (.+)|^\/show/i, async function (msg, match) {
+	let msg_status;
+
 	if (match[1] === undefined)
 		bot.sendMessage(msg.chat.id, 'Пример: <code>/show competitive</code>\n' +
 			'Доступные параметры: ' +
@@ -450,7 +512,7 @@ bot.onText(/^\/show (.+)|^\/show/i, async function (msg, match) {
 		r.table('users')
 			.get(msg.from.id)
 
-			.then(function (profile) {
+			.then(async function (profile) {
 				if (profile !== null
 					&& profile.imgur_quickplay_link !== null
 					&& profile.imgur_competitive_link !== null) {
@@ -461,35 +523,49 @@ bot.onText(/^\/show (.+)|^\/show/i, async function (msg, match) {
 					else if (match[1] === 'competitive')
 						link = profile.imgur_competitive_link;
 
-					bot.sendPhoto(msg.chat.id, link)
+					msg_status = await bot.sendPhoto(msg.chat.id, link)
 						.catch(function (error) {
 							throwError(error, msg.chat.id);
 						});
 				} else
-					bot.sendMessage(msg.chat.id, 'Изображения не сгенерированы! /guide');
+					msg_status = await bot.sendMessage(msg.chat.id, 'Изображения не сгенерированы! /guide');
 			})
 
 			.catch(function (error) {
 				throwError(error, msg.chat.id);
 			});
 	}
+
+	if (msg.chat.id < 0)
+		setTimeout(function () {
+			bot.deleteMessage(msg.chat.id, msg.message_id);
+			bot.deleteMessage(msg_status.chat.id, msg_status.message_id);
+		}, 10000);
 });
 
 bot.onText(/^\/links/, function (msg) {
+	let msg_status;
+
 	r.table('users').get(msg.from.id)
-		.then(function (res) {
+		.then(async function (res) {
 			let text = '<b>Ссылки на Imgur</b>:\n';
 			if (res.imgur_quickplay_link !== undefined)
 				text += `Быстрая: ${res.imgur_quickplay_link}\n`;
 			if (res.imgur_competitive_link !== undefined)
 				text += `Соревновательная: ${res.imgur_competitive_link}\n`;
 
-			bot.sendMessage(msg.chat.id, text,
+			msg_status = await bot.sendMessage(msg.chat.id, text,
 				{
 					parse_mode: 'HTML',
 					disable_web_page_preview: true
 				})
 		});
+
+	if (msg.chat.id < 0)
+		setTimeout(function () {
+			bot.deleteMessage(msg.chat.id, msg.message_id);
+			bot.deleteMessage(msg_status.chat.id, msg_status.message_id);
+		}, 10000);
 });
 
 bot.on('message', function (msg) {
