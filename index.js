@@ -2,7 +2,6 @@
  * Created by savely on 15.04.2017.
  */
 require('console-stamp')(console, { pattern: 'HH:MM:ss.l'});
-const rangi = require("rangi");
 
 global.config = require('./config');
 global.parse_html = {parse_mode:'HTML'};
