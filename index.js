@@ -53,9 +53,9 @@ global.throwError = function (error, id) {
 require('./inline')();
 
 function deleteIfInGroup(msg, sended) {
-	bot.sendMessage(msg.chat.id, 'Через 10 секунд <b>все сообщения будут удалены</b>. Пиши боту в личку!', parse_html)
-		.then(function (warn) {
-			if (msg.chat.id < 0)
+	if (msg.chat.id < 0)
+		bot.sendMessage(msg.chat.id, 'Через 10 секунд <b>все сообщения будут удалены</b>. Пиши боту в личку!', parse_html)
+			.then(function (warn) {
 				setTimeout(function () {
 					bot.deleteMessage(msg.chat.id, msg.message_id);
 					bot.deleteMessage(sended.chat.id, sended.message_id);
