@@ -12,6 +12,7 @@ module.exports = function () {
 				'competitive_file_id',
 				'imgur_link'
 			])
+
 			.then(function (data) {
 				let answer = [];
 
@@ -49,6 +50,10 @@ module.exports = function () {
 				})
 					.then(function (status) {
 						console.log(status);
+					})
+
+					.catch(function (error) {
+						console.warn(error.message);
 					});
 			});
 	});

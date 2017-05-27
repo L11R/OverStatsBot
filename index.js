@@ -2,6 +2,7 @@
  * Created by savely on 15.04.2017.
  */
 require('console-stamp')(console, { pattern: 'HH:MM:ss.l'});
+const rangi = require("rangi");
 
 global.config = require('./config');
 global.parse_html = {parse_mode:'HTML'};
@@ -42,24 +43,32 @@ global.hoursToTime = function (hours) {
 
 global.throwError = function (error, id) {
 	console.warn(error.message);
-	bot.sendMessage(id,
+	return bot.sendMessage(id,
 		`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>`, parse_html);
 };
 
 require('./inline')();
 
-bot.onText(/^\/start/i, async function (msg) {
-	const msg_status = await bot.sendMessage(msg.chat.id, 'Используйте /help, если не знаете что делать.', parse_html);
+function deleteIfInGroup(msg, sended) {
+	bot.sendMessage(msg.chat.id, 'Через 10 секунд <b>все сообщения будут удалены</b>. Пиши боту в личку!', parse_html)
+		.then(function (warn) {
+			if (msg.chat.id < 0)
+				setTimeout(function () {
+					bot.deleteMessage(msg.chat.id, msg.message_id);
+					bot.deleteMessage(sended.chat.id, sended.message_id);
+					bot.deleteMessage(warn.chat.id, warn.message_id);
+				}, 10000);
+		});
+}
 
-	if (msg.chat.id < 0)
-		setTimeout(function () {
-			bot.deleteMessage(msg.chat.id, msg.message_id);
-			bot.deleteMessage(msg_status.chat.id, msg_status.message_id);
-		}, 10000);
+bot.onText(/^\/start/i, async function (msg) {
+	const sended = await bot.sendMessage(msg.chat.id, 'Используйте /help, если не знаете что делать.', parse_html);
+
+	deleteIfInGroup(msg, sended);
 });
 
 bot.onText(/^\/help/i, async function (msg) {
-	const msg_status = await bot.sendMessage(msg.chat.id,
+	const sended = await bot.sendMessage(msg.chat.id,
 		'<b>OverStats 2.0</b> <code>by @kraso</code>\n\n' +
 		'/guide - Инструкция по использованию!\n\n' +
 		'/save <b>Example#1337 eu</b> - Сохраняет ваш актуальный профиль в базу c регионом Europe. Доступные варианты: ' +
@@ -71,15 +80,11 @@ bot.onText(/^\/help/i, async function (msg) {
 		'<i>[Временно]</i> /winratetop - Топ-10 в Быстрой Игре по винрейту\n' +
 		'<i>[Временно]</i> /ratingtop - Топ-10 в Соревновательной Игре по рейтингу', parse_html);
 
-	if (msg.chat.id < 0)
-		setTimeout(function () {
-			bot.deleteMessage(msg.chat.id, msg.message_id);
-			bot.deleteMessage(msg_status.chat.id, msg_status.message_id);
-		}, 10000);
+	deleteIfInGroup(msg, sended);
 });
 
 bot.onText(/^\/guide/i, async function (msg) {
-	const msg_status = await bot.sendMessage(msg.chat.id,
+	const sended = await bot.sendMessage(msg.chat.id,
 		'<b>Как пользоваться ботом</b>\n\n' +
 		'1. Сохраняем профиль командой <code>/save</code> или обновляем уже сохраненный командой <code>/update</code>.\n\n' +
 		'<i>Например:</i> <code>/save Example#1337 eu</code>.\n' +
@@ -103,22 +108,18 @@ bot.onText(/^\/guide/i, async function (msg) {
 			disable_web_page_preview: true
 		});
 
-	if (msg.chat.id < 0)
-		setTimeout(function () {
-			bot.deleteMessage(msg.chat.id, msg.message_id);
-			bot.deleteMessage(msg_status.chat.id, msg_status.message_id);
-		}, 10000);
+	deleteIfInGroup(msg, sended);
 });
 
 bot.onText(/^\/save (.+)\s(.+)|^\/save/i, async function (msg, match) {
-	let pretty_bt, battletag, platform, param, msg_status;
+	let pretty_bt, battletag, platform, param, sended;
 
 	if (match[1] === undefined || match[2] === undefined)
-		msg_status = await bot.sendMessage(msg.chat.id, 'Пример: <code>/save Example#1337 eu</code>\n' +
+		sended = await bot.sendMessage(msg.chat.id, 'Пример: <code>/save Example#1337 eu</code>\n' +
 			'Доступные варианты: ' +
 			'<code>eu</code>, <code>us</code>, <code>kr</code>, <code>psn</code>, <code>xbl</code>', parse_html);
 	else {
-		msg_status = await bot.sendMessage(msg.chat.id, 'Пожалуйста подождите, идет сохранение...');
+		sended = await bot.sendMessage(msg.chat.id, 'Пожалуйста подождите, идет сохранение...');
 		if (match[1].indexOf('-') > -1) {
 			const temp = match[1].split('-');
 			pretty_bt = temp[0] + '#' + temp[1];
@@ -162,26 +163,24 @@ bot.onText(/^\/save (.+)\s(.+)|^\/save/i, async function (msg, match) {
 				},
 				{conflict: 'update'}
 			)
+
 			.then(function (status) {
 				console.log(status);
-				bot.editMessageText('Сохранено!', { message_id: msg_status.message_id, chat_id: msg.chat.id });
+				bot.editMessageText('Сохранено!', { message_id: sended.message_id, chat_id: msg.chat.id });
 			})
+
 			.catch(function (error) {
 				console.log(error.message);
 				bot.editMessageText(`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>`,
-					{message_id: msg_status.message_id, chat_id: msg.chat.id, parse_mode: 'HTML'});
+					{message_id: sended.message_id, chat_id: msg.chat.id, parse_mode: 'HTML'});
 			});
 	}
 
-	if (msg.chat.id < 0)
-		setTimeout(function () {
-			bot.deleteMessage(msg.chat.id, msg.message_id);
-			bot.deleteMessage(msg_status.chat.id, msg_status.message_id);
-		}, 10000);
+	deleteIfInGroup(msg, sended);
 });
 
 bot.onText(/^\/update/i, async function (msg) {
-	const msg_status = await bot.sendMessage(msg.chat.id, 'Пожалуйста подождите, идет обновление...');
+	const sended = await bot.sendMessage(msg.chat.id, 'Пожалуйста подождите, идет обновление...');
 	const user = await r.table('users').get(msg.from.id);
 
 	let profile;
@@ -193,7 +192,7 @@ bot.onText(/^\/update/i, async function (msg) {
 
 		console.warn(error.message);
 		bot.editMessageText(`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>`,
-			{message_id: msg_status.message_id, chat_id: msg.chat.id, parse_mode: 'HTML'});
+			{message_id: sended.message_id, chat_id: msg.chat.id, parse_mode: 'HTML'});
 	}
 
 
@@ -216,59 +215,54 @@ bot.onText(/^\/update/i, async function (msg) {
 			console.log(status);
 			if (status.replaced !== 0)
 				bot.editMessageText('Обновлено!',
-					{ message_id: msg_status.message_id, chat_id: msg.chat.id });
+					{ message_id: sended.message_id, chat_id: msg.chat.id });
 			if (status.skipped !== 0)
 				bot.editMessageText('Изменения не внесены!',
-					{ message_id: msg_status.message_id, chat_id: msg.chat.id });
+					{ message_id: sended.message_id, chat_id: msg.chat.id });
 		})
 
 		.catch(function (error) {
 			console.warn(error.message);
 			bot.editMessageText(`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>`,
-				{message_id: msg_status.message_id, chat_id: msg.chat.id, parse_mode: 'HTML'});
+				{message_id: sended.message_id, chat_id: msg.chat.id, parse_mode: 'HTML'});
 		});
 
-	if (msg.chat.id < 0)
-		setTimeout(function () {
-			bot.deleteMessage(msg.chat.id, msg.message_id);
-			bot.deleteMessage(msg_status.chat.id, msg_status.message_id);
-		}, 10000);
+	deleteIfInGroup(msg, sended);
 });
 
 bot.onText(/^\/delete/i, function (msg) {
-	let msg_status;
+	let sended;
 
 	r.table('users').get(msg.from.id)
 		.delete()
 
-		.then(async function (status) {
+		.then(function (status) {
 			console.log(status);
 			if (status.deleted !== 0)
-				msg_status = await bot.sendMessage(msg.chat.id, 'Удалено!');
+				return bot.sendMessage(msg.chat.id, 'Удалено!');
 			if (status.skipped !== 0)
-				msg_status = await bot.sendMessage(msg.chat.id, 'Нечего удалять.');
+				return bot.sendMessage(msg.chat.id, 'Нечего удалять.');
 		})
 
-		.catch(async function (error) {
-			console.warn(error.message);
-			msg_status = await bot.sendMessage(msg.chat.id,
-				`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>` + ' ...', parse_html);
-		});
+		.then(function (sended) {
+			deleteIfInGroup(msg, sended);
+		})
 
-	if (msg.chat.id < 0)
-		setTimeout(function () {
-			bot.deleteMessage(msg.chat.id, msg.message_id);
-			bot.deleteMessage(msg_status.chat.id, msg_status.message_id);
-		}, 10000);
+		.catch(function (error) {
+			throwError(error, msg.chat.id)
+				.then(function (sended) {
+					deleteIfInGroup(msg, sended);
+				});
+		});
 });
 
 bot.onText(/^\/winratetop/i, function (msg) {
-	let msg_status;
+	let sended;
 
 	r.table('users')
 		.orderBy(r.desc(r.row('profile')('stats')('quickplay')('overall_stats')('win_rate')))
 		.limit(10)
-		.then(async function (users) {
+		.then(function (users) {
 			let top = '<b>Топ-10 по винрейту в Быстрой Игре</b>:\n';
 			for (let i in users) {
 				if (users.hasOwnProperty(i)) {
@@ -280,23 +274,28 @@ bot.onText(/^\/winratetop/i, function (msg) {
 					}
 				}
 			}
-			await bot.sendMessage(msg.chat.id, top, parse_html);
-		});
+			return bot.sendMessage(msg.chat.id, top, parse_html);
+		})
 
-	if (msg.chat.id < 0)
-		setTimeout(function () {
-			bot.deleteMessage(msg.chat.id, msg.message_id);
-			bot.deleteMessage(msg_status.chat.id, msg_status.message_id);
-		}, 10000);
+		.then(function (sended) {
+			deleteIfInGroup(msg, sended);
+		})
+
+		.catch(function (error) {
+			throwError(error, msg.chat.id)
+				.then(function (sended) {
+					deleteIfInGroup(msg, sended);
+				});
+		});
 });
 
 bot.onText(/^\/ratingtop/i, function (msg) {
-	let msg_status;
+	let sended;
 
 	r.table('users')
 		.orderBy(r.desc(r.row('profile')('stats')('competitive')('overall_stats')('comprank')))
 		.limit(10)
-		.then(async function (users) {
+		.then(function (users) {
 			let top = '<b>Топ-10 по рейтингу в Соревновательной Игре</b>:\n';
 			for (let i in users) {
 				if (users.hasOwnProperty(i)) {
@@ -308,14 +307,19 @@ bot.onText(/^\/ratingtop/i, function (msg) {
 					}
 				}
 			}
-			msg_status = bot.sendMessage(msg.chat.id, top, parse_html);
-		});
+			return bot.sendMessage(msg.chat.id, top, parse_html);
+		})
 
-	if (msg.chat.id < 0)
-		setTimeout(function () {
-			bot.deleteMessage(msg.chat.id, msg.message_id);
-			bot.deleteMessage(msg_status.chat.id, msg_status.message_id);
-		}, 10000);
+		.then(function (sended) {
+			deleteIfInGroup(msg, sended);
+		})
+
+		.catch(function (error) {
+			throwError(error, msg.chat.id)
+				.then(function (sended) {
+					deleteIfInGroup(msg, sended);
+				});
+		});
 });
 
 function getRank(obj) {
@@ -459,7 +463,7 @@ bot.onText(/^\/generate/i, async function (msg) {
 		'quickplay'
 	];
 
-	const msg_status = await bot.sendMessage(msg.chat.id, 'Пожалуйста подождите, идет генерация...');
+	const sended = await bot.sendMessage(msg.chat.id, 'Пожалуйста подождите, идет генерация...');
 
 	let competitive, quickplay, tempRanks = [];
 
@@ -490,29 +494,26 @@ bot.onText(/^\/generate/i, async function (msg) {
 				text += `${(new Date().getTime()) - startCycle} ms: ${tempRanks[i][tempRanks[i].length - 1]} failed!\n`;
 			}
 			await bot.editMessageText(`${text}Total: ${(new Date().getTime()) - startTotal} ms</pre>`,
-				{message_id: msg_status.message_id, chat_id: msg.chat.id, parse_mode: 'HTML'});
+				{message_id: sended.message_id, chat_id: msg.chat.id, parse_mode: 'HTML'});
 		}
 	}
 
-	if (msg.chat.id < 0)
-		setTimeout(function () {
-			bot.deleteMessage(msg.chat.id, msg.message_id);
-			bot.deleteMessage(msg_status.chat.id, msg_status.message_id);
-		}, 10000);
+	deleteIfInGroup(msg, sended);
 });
 
 bot.onText(/^\/show (.+)|^\/show/i, async function (msg, match) {
-	let msg_status;
+	let sended;
 
 	if (match[1] === undefined)
-		bot.sendMessage(msg.chat.id, 'Пример: <code>/show competitive</code>\n' +
+		sended = await bot.sendMessage(msg.chat.id, 'Пример: <code>/show competitive</code>\n' +
 			'Доступные параметры: ' +
 			'<code>quickplay</code>, <code>competitive</code>', parse_html);
+
 	else {
 		r.table('users')
 			.get(msg.from.id)
 
-			.then(async function (profile) {
+			.then(function (profile) {
 				if (profile !== null
 					&& profile.imgur_quickplay_link !== null
 					&& profile.imgur_competitive_link !== null) {
@@ -523,28 +524,26 @@ bot.onText(/^\/show (.+)|^\/show/i, async function (msg, match) {
 					else if (match[1] === 'competitive')
 						link = profile.imgur_competitive_link;
 
-					msg_status = await bot.sendPhoto(msg.chat.id, link)
-						.catch(function (error) {
-							throwError(error, msg.chat.id);
-						});
+					return bot.sendPhoto(msg.chat.id, link);
 				} else
-					msg_status = await bot.sendMessage(msg.chat.id, 'Изображения не сгенерированы! /guide');
+					return bot.sendMessage(msg.chat.id, 'Изображения не сгенерированы! /guide');
+			})
+
+			.then(function (sended) {
+				deleteIfInGroup(msg, sended);
 			})
 
 			.catch(function (error) {
-				throwError(error, msg.chat.id);
+				throwError(error, msg.chat.id)
+					.then(function (sended) {
+						deleteIfInGroup(msg, sended);
+					});
 			});
 	}
-
-	if (msg.chat.id < 0)
-		setTimeout(function () {
-			bot.deleteMessage(msg.chat.id, msg.message_id);
-			bot.deleteMessage(msg_status.chat.id, msg_status.message_id);
-		}, 10000);
 });
 
 bot.onText(/^\/links/, function (msg) {
-	let msg_status;
+	let sended;
 
 	r.table('users').get(msg.from.id)
 		.then(async function (res) {
@@ -554,18 +553,14 @@ bot.onText(/^\/links/, function (msg) {
 			if (res.imgur_competitive_link !== undefined)
 				text += `Соревновательная: ${res.imgur_competitive_link}\n`;
 
-			msg_status = await bot.sendMessage(msg.chat.id, text,
+			sended = await bot.sendMessage(msg.chat.id, text,
 				{
 					parse_mode: 'HTML',
 					disable_web_page_preview: true
-				})
-		});
+				});
 
-	if (msg.chat.id < 0)
-		setTimeout(function () {
-			bot.deleteMessage(msg.chat.id, msg.message_id);
-			bot.deleteMessage(msg_status.chat.id, msg_status.message_id);
-		}, 10000);
+			deleteIfInGroup(msg, sended);
+		});
 });
 
 bot.on('message', function (msg) {

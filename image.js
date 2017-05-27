@@ -406,7 +406,7 @@ module.exports.generate = async function(data, pretty_bt, ranks, user_id, chat_i
 			console.log('Streaming...');
 		});
 
-		stream.on('end', async function () {
+		stream.on('end', function () {
 			// Clean canvas to prevent memory leak!
 			canvas.clear();
 
@@ -415,28 +415,24 @@ module.exports.generate = async function(data, pretty_bt, ranks, user_id, chat_i
 			console.log('Stream ended, starting sending!');
 
 			// Getting deletehash from DB and removing image from Imgur (yes, we save their space to keep it free)
-			await r.table('users').get(user_id).pluck(
+			r.table('users').get(user_id).pluck(
 				[
 					'imgur_competitive_deletehash',
 					'imgur_quickplay_deletehash'
 				])
 				.then(function (res) {
-					if (mode === 'quickplay')
+					if (mode === 'quickplay' && res.imgur_quickplay_deletehash !== undefined)
 						return imgur.deleteImage(res.imgur_quickplay_deletehash);
-					else if (mode === 'competitive')
+					else if (mode === 'competitive' && res.imgur_quickplay_deletehash !== undefined)
 						return imgur.deleteImage(res.imgur_competitive_deletehash);
 				})
 
 				.then(function(status) {
 					console.log(status);
+					// Uploading new image and saving link and deletehash
+					return imgur.uploadBase64(buffer.toString('base64'))
 				})
 
-				.catch(function (error) {
-					console.warn(error);
-				});
-
-			// Uploading new image and saving link and deletehash
-			await imgur.uploadBase64(buffer.toString('base64'))
 				.then(function (res) {
 					console.log(res);
 					let imgur_competitive_link, imgur_competitive_deletehash,
@@ -465,9 +461,8 @@ module.exports.generate = async function(data, pretty_bt, ranks, user_id, chat_i
 				})
 
 				.catch(function (error) {
-					console.warn(error.message);
 					reject(error);
-				})
+				});
 		});
 	});
 };
