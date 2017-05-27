@@ -18,7 +18,11 @@ global.r = require('rethinkdbdash')({
 });
 
 global.R = require('ramda');
-global.bot = new TelegramBot(config.private.token, { polling: true });
+global.bot = new TelegramBot(config.private.token, {
+	webHook: {
+		port: 5001
+	}
+});
 
 global.hoursToTime = function (hours) {
 	function hoursToMinutes(hours) {
