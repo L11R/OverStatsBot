@@ -1,0 +1,48 @@
+{
+  "error_message": "Something goes wrong...\n<code>%(error)s</code>",
+
+  "start_message": "Use /help if you don't know what to do.",
+  "help_message": "<b>OverStats 2.0</b> <code>by @kraso</code>\n\n/guide - Инструкция по использованию!\n\n/save <b>Example#1337 eu</b> - Сохраняет ваш актуальный профиль в базу c регионом Europe. Доступные варианты: <code>eu</code>, <code>us</code>, <code>kr</code>, <code>psn</code>, <code>xbl</code>\n/update - Обновляет имеющийся профиль в базе до актуального\n/delete - Полностью удаляет профиль и любую информацию из базы\n\n/generate - Генерирует два изображения с вашей статистикой относительно других игроков, использующих бота\n/show <code>[competitive/quickplay]</code> - Отображает эти изображения.\n\n<i>[Временно]</i> /winratetop - Топ-10 в Быстрой Игре по винрейту\n<i>[Временно]</i> /ratingtop - Топ-10 в Соревновательной Игре по рейтингу",
+  "guide_message": "<b>Как пользоваться ботом</b>\n\n1. Сохраняем профиль командой <code>/save</code> или обновляем уже сохраненный командой <code>/update</code>.\n\n<i>Например:</i> <code>/save Example#1337 eu</code>.\nДанная команда сохранит профиль с Battletag Example#1337 и регионом Europe. Помимо Европы можно указать Америку и Корею (<code>us</code> и <code>kr</code> соответственно). Если вы играете с приставки, то вместо региона нужно указать вашу платформу: <code>psn</code> (PS4) или <code>xbl</code> (Xbox One).\n\n2. Генерируем изображения командой <code>/generate</code>. Проследите за тем, чтобы генерация прошла успешно.\n\n3. Отображаем сгенерированные изображения, используя один из методов:\n\n— Используйте inline-режим аналогичный ботам @gif, @vote, @like и другим.\n— Используйте команду <code>/show [competitive/quickplay]</code>.\n\n<i>Например:</i> <code>/show quickplay</code>.\nДанная команда отобразит статистику по быстрой игре.\n\n<b>Справка:</b> Процентное значение на изображении означает то, сколько игроков находятся выше вас. Например, если указано 25%%, то это значит, что в боте зарегистрировано ещё 25%% процентов игроков, которые имеют указанную характеристику, лучше чем у вас.\n\nПо всем вопросам пишите <a href=\"https://t.me/kraso\">мне</a>.",
+
+  "save_example_message": "Example: <code>/save Example#1337 eu</code>\nAvailable variants: <code>eu</code>, <code>us</code>, <code>kr</code>, <code>psn</code>, <code>xbl</code>",
+  "please_wait_saving_message": "Please wait, saving in progress...",
+  "saved_message": "Saved!",
+
+  "please_wait_updating_message": "Please wait, updating in progress...",
+  "updated_message": "Updated!",
+
+  "deleted_message": "Deleted!",
+  "nothing_to_delete_message": "Nothing to delete.",
+
+  "winratetop_header_message": "<b>Top-10 by winrate in Quickplay</b>:\n",
+  "ratingtop_header_message": "<b>Top-10 by skill rating in Competitive</b>:\n",
+
+  "please_wait_generation_message": "Please wait, generation in progress...",
+  "generation_progress_header_message": "Generation progress:\n<pre>",
+  "generation_done_message": "%(time)s ms: %(mode)s done!️\n",
+  "generation_failed_message": "%(time)s ms: %(mode)s failed!️\n",
+  "generation_total_message": "%(text)sTotal: %(time)s ms</pre>",
+
+  "show_example_message": "Example: <code>/show competitive</code>\nAvailable params: <code>quickplay</code>, <code>competitive</code>",
+  "show_error_message": "Images not generated! /guide",
+
+  "links_header_message": "<b>Links on Imgur</b>:\n",
+  "links_quickplay_message": "Quickplay: %(link)s",
+  "links_competitive_message": "Competitive: %(link)s",
+
+  "donate_message": "You can do small donation on development <a href=\"https://krasovsky.me/bots\">here</a>.",
+
+  "deaths_avg": "DEATHS",
+  "eliminations_avg": "ELIMINATIONS",
+  "final_blows_avg": "FINAL BLOWS",
+  "healing_done_avg": "HEALING DONE",
+  "melee_final_blows_avg": "MELEE FINAL BLOWS",
+  "objective_kills_avg": "OBJECTIVE KILLS",
+  "objective_time_avg": "OBJECTIVE TIME",
+  "solo_kills_avg": "SOLO KILLS",
+  "time_spent_on_fire_avg": "TIME SPENT ON FIRE",
+
+  "kpd": "KILLS/DEATHS",
+  "win_rate": "WINRATE, %%"
+}

@@ -1,0 +1,48 @@
+{
+  "error_message": "Что-то пошло не так...\n<code>%(error)s</code>",
+
+  "start_message": "Используйте /help, если не знаете что делать.",
+  "help_message": "<b>OverStats 2.0</b> <code>by @kraso</code>\n\n/guide - Инструкция по использованию!\n\n/save <b>Example#1337 eu</b> - Сохраняет ваш актуальный профиль в базу c регионом Europe. Доступные варианты: <code>eu</code>, <code>us</code>, <code>kr</code>, <code>psn</code>, <code>xbl</code>\n/update - Обновляет имеющийся профиль в базе до актуального\n/delete - Полностью удаляет профиль и любую информацию из базы\n\n/generate - Генерирует два изображения с вашей статистикой относительно других игроков, использующих бота\n/show <code>[competitive/quickplay]</code> - Отображает эти изображения.\n\n<i>[Временно]</i> /winratetop - Топ-10 в Быстрой Игре по винрейту\n<i>[Временно]</i> /ratingtop - Топ-10 в Соревновательной Игре по рейтингу",
+  "guide_message": "<b>Как пользоваться ботом</b>\n\n1. Сохраняем профиль командой <code>/save</code> или обновляем уже сохраненный командой <code>/update</code>.\n\n<i>Например:</i> <code>/save Example#1337 eu</code>.\nДанная команда сохранит профиль с Battletag Example#1337 и регионом Europe. Помимо Европы можно указать Америку и Корею (<code>us</code> и <code>kr</code> соответственно). Если вы играете с приставки, то вместо региона нужно указать вашу платформу: <code>psn</code> (PS4) или <code>xbl</code> (Xbox One).\n\n2. Генерируем изображения командой <code>/generate</code>. Проследите за тем, чтобы генерация прошла успешно.\n\n3. Отображаем сгенерированные изображения, используя один из методов:\n\n— Используйте inline-режим аналогичный ботам @gif, @vote, @like и другим.\n— Используйте команду <code>/show [competitive/quickplay]</code>.\n\n<i>Например:</i> <code>/show quickplay</code>.\nДанная команда отобразит статистику по быстрой игре.\n\n<b>Справка:</b> Процентное значение на изображении означает то, сколько игроков находятся выше вас. Например, если указано 25%%, то это значит, что в боте зарегистрировано ещё 25%% процентов игроков, которые имеют указанную характеристику, лучше чем у вас.\n\nПо всем вопросам пишите <a href=\"https://t.me/kraso\">мне</a>.",
+
+  "save_example_message": "Пример: <code>/save Example#1337 eu</code>\nДоступные варианты: <code>eu</code>, <code>us</code>, <code>kr</code>, <code>psn</code>, <code>xbl</code>",
+  "please_wait_saving_message": "Пожалуйста подождите, идет сохранение...",
+  "saved_message": "Сохранено!",
+
+  "please_wait_updating_message": "Пожалуйста подождите, идет обновление...",
+  "updated_message": "Обновлено!",
+
+  "deleted_message": "Удалено!",
+  "nothing_to_delete_message": "Нечего удалять.",
+
+  "winratetop_header_message": "<b>Топ-10 по винрейту в Быстрой Игре</b>:\n",
+  "ratingtop_header_message": "<b>Топ-10 по рейтингу в Соревновательной Игре</b>:\n",
+
+  "please_wait_generation_message": "Пожалуйста подождите, идет генерация...",
+  "generation_progress_header_message": "Процесс генерации:\n<pre>",
+  "generation_done_message": "%(time)s мс: %(mode)s готово!️\n",
+  "generation_failed_message": "%(time)s мс: %(mode)s провалено!️\n",
+  "generation_total_message": "%(text)sВсего: %(time)s мс</pre>",
+
+  "show_example_message": "Пример: <code>/show competitive</code>\nДоступные параметры: <code>quickplay</code>, <code>competitive</code>",
+  "show_error_message": "Изображения не сгенерированы! /guide",
+
+  "links_header_message": "<b>Ссылки на Imgur</b>:\n",
+  "links_quickplay_message": "Быстрая: %(link)s\n",
+  "links_competitive_message": "Соревновательная: %(link)s\n",
+
+  "donate_message": "Небольшую сумму на поддержание и разработку можно подкинуть <a href=\"https://krasovsky.me/bots\">здесь</a>.",
+
+  "deaths_avg": "СМЕРТЕЙ",
+  "eliminations_avg": "УБИЙСТВ",
+  "final_blows_avg": "СМЕРТЕЛЬНЫХ УДАРОВ",
+  "healing_done_avg": "ОБЪЕМ ИСЦЕЛЕНИЯ",
+  "melee_final_blows_avg": "СМЕРТ. УДАРОВ В РУКОП.",
+  "objective_kills_avg": "УБИЙСТВ У ОБЪЕКТОВ",
+  "objective_time_avg": "ВЫПОЛНЕНИЕ ЗАДАЧ",
+  "solo_kills_avg": "ОДИНОЧНЫХ УБИЙСТВ",
+  "time_spent_on_fire_avg": "ВРЕМЯ В УДАРЕ",
+
+  "kpd": "УБИЙСТВ/СМЕРТЕЙ",
+  "win_rate": "ВИНРЕЙТ, %%"
+}
