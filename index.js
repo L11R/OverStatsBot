@@ -485,14 +485,14 @@ bot.onText(/^\/show (.+)|^\/show/i, async function (msg, match) {
 
 				.then(function (profile) {
 					if (profile !== null
-						&& profile.imgur_quickplay_link !== null
-						&& profile.imgur_competitive_link !== null) {
+						&& profile.imgur.quickplay.link !== null
+						&& profile.imgur.competitive.link !== null) {
 
 						let link;
 						if (match[1] === 'quickplay')
-							link = profile.imgur_quickplay_link;
+							link = profile.imgur.quickplay.link;
 						else if (match[1] === 'competitive')
-							link = profile.imgur_competitive_link;
+							link = profile.imgur.competitive.link;
 
 						return bot.sendPhoto(msg.chat.id, link);
 					} else
@@ -511,10 +511,10 @@ bot.onText(/^\/links/, function (msg) {
 		r.table('users').get(msg.from.id)
 			.then(function (res) {
 				let text = '<b>Ссылки на Imgur</b>:\n';
-				if (res.imgur_quickplay_link !== undefined)
-					text += `Быстрая: ${res.imgur_quickplay_link}\n`;
-				if (res.imgur_competitive_link !== undefined)
-					text += `Соревновательная: ${res.imgur_competitive_link}\n`;
+				if (res.imgur.quickplay.link !== undefined)
+					text += `Быстрая: ${res.imgur.quickplay.link}\n`;
+				if (res.imgur.competitive.link !== undefined)
+					text += `Соревновательная: ${res.imgur.competitive.link}\n`;
 
 				bot.sendMessage(msg.chat.id, text,
 					{

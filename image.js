@@ -252,7 +252,6 @@ module.exports.generate = async function(data, pretty_bt, input, user_id, chat_i
 	const splitedRanks = R.splitEvery(5, ranks);
 
 	for (let raw in splitedRanks) {
-
 		// First group
 		const line1 = new fabric.Rect({
 			width: canvas.width - 40,
@@ -327,16 +326,15 @@ module.exports.generate = async function(data, pretty_bt, input, user_id, chat_i
 			console.log('Stream ended, starting sending!');
 
 			// Getting deletehash from DB and removing image from Imgur (yes, we save their space to keep it free)
-			r.table('users').get(user_id).pluck(
-				[
-					'imgur_competitive_deletehash',
-					'imgur_quickplay_deletehash'
-				])
+			r.table('users').get(user_id).pluck('imgur')
 				.then(function (res) {
-					if (mode === 'quickplay' && res.imgur_quickplay_deletehash !== undefined)
-						return imgur.deleteImage(res.imgur_quickplay_deletehash);
-					else if (mode === 'competitive' && res.imgur_quickplay_deletehash !== undefined)
-						return imgur.deleteImage(res.imgur_competitive_deletehash);
+					if (res.imgur !== undefined) {
+						if (mode === 'quickplay' && res.imgur.quickplay.deletehash !== undefined)
+							return imgur.deleteImage(res.imgur.quickplay.deletehash);
+						else if (mode === 'competitive' && res.imgur.competitive.deletehash !== undefined)
+							return imgur.deleteImage(res.imgur.competitive.deletehash);
+					} else
+						return 'First generation!';
 				})
 
 				.then(function(status) {
@@ -347,23 +345,21 @@ module.exports.generate = async function(data, pretty_bt, input, user_id, chat_i
 
 				.then(function (res) {
 					console.log(res);
-					let imgur_competitive_link, imgur_competitive_deletehash,
-						imgur_quickplay_link, imgur_quickplay_deletehash;
+					let data = {};
+					data.quickplay = {};
+					data.competitive = {};
 
 					if (mode === 'quickplay') {
-						imgur_quickplay_link = res.data.link;
-						imgur_quickplay_deletehash = res.data.deletehash;
+						data.quickplay.link = res.data.link;
+						data.quickplay.deletehash = res.data.deletehash;
 					} else if (mode === 'competitive') {
-						imgur_competitive_link = res.data.link;
-						imgur_competitive_deletehash = res.data.deletehash;
+						data.competitive.link = res.data.link;
+						data.competitive.deletehash = res.data.deletehash;
 					}
 
 					return r.table('users').get(user_id)
 						.update({
-							imgur_competitive_link: imgur_competitive_link,
-							imgur_competitive_deletehash: imgur_competitive_deletehash,
-							imgur_quickplay_link: imgur_quickplay_link,
-							imgur_quickplay_deletehash: imgur_quickplay_deletehash,
+							imgur: data
 						});
 				})
 
