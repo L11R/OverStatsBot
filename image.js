@@ -6,9 +6,10 @@ const imgur = require('imgur');
 
 imgur.setClientId(config.private.imgur_client_id);
 
-module.exports.generate = async function(data, pretty_bt, ranks, user_id, chat_id) {
+module.exports.generate = async function(data, pretty_bt, input, user_id, chat_id) {
 	const canvas = fabric.createCanvasForNode(800, 600);
-	const mode = ranks[ranks.length - 1];
+	const mode = input.mode;
+	const ranks = input.ranks;
 
 	console.log('Stats preparing!');
 	let stats, moreStats, averageStats, overallStats, heroesPlaytime, heroes;
@@ -78,9 +79,15 @@ module.exports.generate = async function(data, pretty_bt, ranks, user_id, chat_i
 	const bignoodle_italic_ot = opentype.loadSync('fonts/BigNoodleTooOblique.ttf');
 	const futura_ot = opentype.loadSync('fonts/FuturaPTBold.ttf');
 
-	const bignoodle = new canvas.Font('BigNoodleToo.ttf', __dirname + '/fonts/BigNoodleToo.ttf');
-	const bignoodle_italic = new canvas.Font('BigNoodleTooOblique.ttf', __dirname + '/fonts/BigNoodleTooOblique.ttf');
-	const futura =  new canvas.Font('FuturaPTBold.ttf', __dirname + '/fonts/FuturaPTBold.ttf');
+	// Linux
+	//const bignoodle = new canvas.Font('BigNoodleToo.ttf', __dirname + '/fonts/BigNoodleToo.ttf');
+	//const bignoodle_italic = new canvas.Font('BigNoodleTooOblique.ttf', __dirname + '/fonts/BigNoodleTooOblique.ttf');
+	//const futura =  new canvas.Font('FuturaPTBold.ttf', __dirname + '/fonts/FuturaPTBold.ttf');
+
+	// Windows
+	const bignoodle = new canvas.Font('BigNoodleToo', __dirname + '/fonts/BigNoodleToo.ttf');
+	const bignoodle_italic = new canvas.Font('BigNoodleTooOblique', __dirname + '/fonts/BigNoodleTooOblique.ttf');
+	const futura =  new canvas.Font('FuturaPTBold', __dirname + '/fonts/FuturaPTBold.ttf');
 
 	// Fonts activating
 	canvas.contextContainer.addFont(bignoodle);
@@ -242,152 +249,57 @@ module.exports.generate = async function(data, pretty_bt, ranks, user_id, chat_i
 	}
 
 	// Stats
-	const tempStats = [
-		{
-			key: ranks[0].name,
-			value: ranks[0].value,
-			rank: ranks[0].rank
-		},
-		{
-			key: ranks[1].name,
-			value: ranks[1].value,
-			rank: ranks[1].rank
-		},
-		{
-			key: ranks[2].name,
-			value: ranks[2].value,
-			rank: ranks[2].rank
-		},
-		{
-			key: ranks[3].name,
-			value: ranks[3].value,
-			rank: ranks[3].rank
-		},
-		{
-			key: ranks[4].name,
-			value: ranks[4].value,
-			rank: ranks[4].rank
-		},
-		{
-			key: ranks[5].name,
-			value: ranks[5].value,
-			rank: ranks[5].rank
-		},
-		{
-			key: ranks[6].name,
-			value: ranks[6].value,
-			rank: ranks[6].rank
-		},
-		{
-			key: ranks[7].name,
-			value: ranks[7].value,
-			rank: ranks[7].rank
-		},
-		{
-			key: ranks[8].name,
-			value: ranks[8].value,
-			rank: ranks[8].rank
-		},
-		{
-			key: ranks[9].name,
-			value: ranks[9].value,
-			rank: ranks[9].rank
-		}
-	];
+	const splitedRanks = R.splitEvery(5, ranks);
 
-	// First group
-	const line0 = new fabric.Rect({
-		width: canvas.width - 40,
-		height: 1,
-		left: 20,
-		top: 355
-	});
+	for (let raw in splitedRanks) {
 
-	const line1 = new fabric.Rect({
-		width: canvas.width - 40,
-		height: 1,
-		left: 20,
-		top: 405
-	});
-
-	// Second group
-	const line2 = new fabric.Rect({
-		width: canvas.width - 40,
-		height: 1,
-		left: 20,
-		top: 485
-	});
-
-	const line3 = new fabric.Rect({
-		width: canvas.width - 40,
-		height: 1,
-		left: 20,
-		top: 535
-	});
-
-	canvas.add(line0);
-	canvas.add(line1);
-	canvas.add(line2);
-	canvas.add(line3);
-
-	for (let column = 0; column < tempStats.length / 2; column++) {
 		// First group
-		const key0 = new fabric.Text(tempStats[column].key, {
-			left: 20 + 155 * column,
-			top: 330 + 100 * 0,
-			fill: 'grey',
-			fontFamily: 'BigNoodleToo',
-			fontSize: 20
+		const line1 = new fabric.Rect({
+			width: canvas.width - 40,
+			height: 1,
+			left: 20,
+			top: 355 + 130 * raw
 		});
 
-		const value0 = new fabric.Text(tempStats[column].value.toString(), {
-			left: 20 + 155 * column,
-			top: 355 + 100 * 0,
-			fill: '#555',
-			fontFamily: 'BigNoodleTooOblique',
-			fontSize: 50
+		const line2 = new fabric.Rect({
+			width: canvas.width - 40,
+			height: 1,
+			left: 20,
+			top: 405 + 130 * raw
 		});
 
-		const rank0 = new fabric.Text(tempStats[column].rank, {
-			left: 20 + 155 * column,
-			top: 410 + 100 * 0,
-			fill: 'grey',
-			fontFamily: 'BigNoodleToo',
-			fontSize: 30
-		});
+		canvas.add(line1);
+		canvas.add(line2);
 
-		// Second group
-		const key1 = new fabric.Text(tempStats[column + 5].key, {
-			left: 20 + 155 * column,
-			top: 360 + 100 * 1,
-			fill: 'grey',
-			fontFamily: 'BigNoodleToo',
-			fontSize: 20
-		});
+		for (let column in splitedRanks[raw]) {
+			const name = new fabric.Text(splitedRanks[raw][column].name, {
+				left: 20 + 155 * column,
+				top: 330 + 130 * raw,
+				fill: 'grey',
+				fontFamily: 'BigNoodleToo',
+				fontSize: 20
+			});
 
-		const value1 = new fabric.Text(tempStats[column + 5].value.toString(), {
-			left: 20 + 155 * column,
-			top: 385 + 100 * 1,
-			fill: '#555',
-			fontFamily: 'BigNoodleTooOblique',
-			fontSize: 50
-		});
+			const value = new fabric.Text(splitedRanks[raw][column].value.toString(), {
+				left: 20 + 155 * column,
+				top: 355 + 130 * raw,
+				fill: '#555',
+				fontFamily: 'BigNoodleTooOblique',
+				fontSize: 50
+			});
 
-		const rank1 = new fabric.Text(tempStats[column + 5].rank, {
-			left: 20 + 155 * column,
-			top: 440 + 100 * 1,
-			fill: 'grey',
-			fontFamily: 'BigNoodleToo',
-			fontSize: 30
-		});
+			const rank = new fabric.Text(splitedRanks[raw][column].rank, {
+				left: 20 + 155 * column,
+				top: 410 + 130 * raw,
+				fill: 'grey',
+				fontFamily: 'BigNoodleToo',
+				fontSize: 30
+			});
 
-		canvas.add(key0);
-		canvas.add(value0);
-		canvas.add(rank0);
-
-		canvas.add(key1);
-		canvas.add(value1);
-		canvas.add(rank1);
+			canvas.add(name);
+			canvas.add(value);
+			canvas.add(rank);
+		}
 	}
 
 	console.log('Image generation completed!');

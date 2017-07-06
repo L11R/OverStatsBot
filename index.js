@@ -9,19 +9,10 @@ global.parse_html = {parse_mode:'HTML'};
 const image = require('./image');
 const TelegramBot = require('node-telegram-bot-api');
 
-global.r = require('rethinkdbdash')({
-	db: 'overwatch',
-	servers: [
-		{host: '192.168.1.2', port: 28015}
-	]
-});
+global.r = require('rethinkdbdash')(config.private.database);
 
 global.R = require('ramda');
-global.bot = new TelegramBot(config.private.token, {
-	webHook: {
-		port: 5001
-	}
-});
+global.bot = new TelegramBot(config.private.token, config.private.botconf);
 
 global.hoursToTime = function (hours) {
 	function hoursToMinutes(hours) {
@@ -64,204 +55,192 @@ function deleteIfInGroup(msg, sended) {
 		});
 }
 
-bot.onText(/^\/start/i, async function (msg) {
-	const sended = await bot.sendMessage(msg.chat.id, 'Используйте /help, если не знаете что делать.', parse_html);
-
-	deleteIfInGroup(msg, sended);
+bot.onText(/^\/start/i, function (msg) {
+	if (msg.chat.id)
+		bot.sendMessage(msg.chat.id, 'Используйте /help, если не знаете что делать.', parse_html);
 });
 
-bot.onText(/^\/help/i, async function (msg) {
-	const sended = await bot.sendMessage(msg.chat.id,
-		'<b>OverStats 2.0</b> <code>by @kraso</code>\n\n' +
-		'/guide - Инструкция по использованию!\n\n' +
-		'/save <b>Example#1337 eu</b> - Сохраняет ваш актуальный профиль в базу c регионом Europe. Доступные варианты: ' +
-		'<code>eu</code>, <code>us</code>, <code>kr</code>, <code>psn</code>, <code>xbl</code>\n' +
-		'/update - Обновляет имеющийся профиль в базе до актуального\n' +
-		'/delete - Полностью удаляет профиль и любую информацию из базы\n\n' +
-		'/generate - Генерирует два изображения с вашей статистикой относительно других игроков, использующих бота\n' +
-		'/show <code>[competitive/quickplay]</code> - Отображает эти изображения.\n\n' +
-		'<i>[Временно]</i> /winratetop - Топ-10 в Быстрой Игре по винрейту\n' +
-		'<i>[Временно]</i> /ratingtop - Топ-10 в Соревновательной Игре по рейтингу', parse_html);
-
-	deleteIfInGroup(msg, sended);
+bot.onText(/^\/help/i, function (msg) {
+	if (msg.chat.id > 0)
+		bot.sendMessage(msg.chat.id,
+			'<b>OverStats 2.0</b> <code>by @kraso</code>\n\n' +
+			'/guide - Инструкция по использованию!\n\n' +
+			'/save <b>Example#1337 eu</b> - Сохраняет ваш актуальный профиль в базу c регионом Europe. Доступные варианты: ' +
+			'<code>eu</code>, <code>us</code>, <code>kr</code>, <code>psn</code>, <code>xbl</code>\n' +
+			'/update - Обновляет имеющийся профиль в базе до актуального\n' +
+			'/delete - Полностью удаляет профиль и любую информацию из базы\n\n' +
+			'/generate - Генерирует два изображения с вашей статистикой относительно других игроков, использующих бота\n' +
+			'/show <code>[competitive/quickplay]</code> - Отображает эти изображения.\n\n' +
+			'<i>[Временно]</i> /winratetop - Топ-10 в Быстрой Игре по винрейту\n' +
+			'<i>[Временно]</i> /ratingtop - Топ-10 в Соревновательной Игре по рейтингу', parse_html);
 });
 
-bot.onText(/^\/guide/i, async function (msg) {
-	const sended = await bot.sendMessage(msg.chat.id,
-		'<b>Как пользоваться ботом</b>\n\n' +
-		'1. Сохраняем профиль командой <code>/save</code> или обновляем уже сохраненный командой <code>/update</code>.\n\n' +
-		'<i>Например:</i> <code>/save Example#1337 eu</code>.\n' +
-		'Данная команда сохранит профиль с Battletag Example#1337 ' +
-		'и регионом Europe. Помимо Европы можно указать Америку и Корею (<code>us</code> и <code>kr</code> ' +
-		'соответственно). Если вы играете с приставки, то вместо региона нужно указать вашу платформу: ' +
-		'<code>psn</code> (PS4) или <code>xbl</code> (Xbox One).\n\n' +
-		'2. Генерируем изображения командой <code>/generate</code>. ' +
-		'Проследите за тем, чтобы генерация прошла успешно.\n\n' +
-		'3. Отображаем сгенерированные изображения, используя один из методов:\n\n' +
-		'— Используйте inline-режим аналогичный ботам @gif, @vote, @like и другим.\n' +
-		'— Используйте команду <code>/show [competitive/quickplay]</code>.\n\n' +
-		'<i>Например:</i> <code>/show quickplay</code>.\n' +
-		'Данная команда отобразит статистику по быстрой игре.\n\n' +
-		'<b>Справка:</b> Процентное значение на изображении означает то, сколько игроков находятся выше вас. ' +
-		'Например, если указано 25%, то это значит, что в боте зарегистрировано ещё 25% процентов игроков, которые имеют ' +
-		'указанную характеристику, лучше чем у вас.\n\n' +
-		'По всем вопросам пишите <a href="https://t.me/kraso">мне</a>.',
-		{
-			parse_mode: 'HTML',
-			disable_web_page_preview: true
-		});
-
-	deleteIfInGroup(msg, sended);
+bot.onText(/^\/guide/i, function (msg) {
+	if (msg.chat.id > 0)
+		bot.sendMessage(msg.chat.id,
+			'<b>Как пользоваться ботом</b>\n\n' +
+			'1. Сохраняем профиль командой <code>/save</code> или обновляем уже сохраненный командой <code>/update</code>.\n\n' +
+			'<i>Например:</i> <code>/save Example#1337 eu</code>.\n' +
+			'Данная команда сохранит профиль с Battletag Example#1337 ' +
+			'и регионом Europe. Помимо Европы можно указать Америку и Корею (<code>us</code> и <code>kr</code> ' +
+			'соответственно). Если вы играете с приставки, то вместо региона нужно указать вашу платформу: ' +
+			'<code>psn</code> (PS4) или <code>xbl</code> (Xbox One).\n\n' +
+			'2. Генерируем изображения командой <code>/generate</code>. ' +
+			'Проследите за тем, чтобы генерация прошла успешно.\n\n' +
+			'3. Отображаем сгенерированные изображения, используя один из методов:\n\n' +
+			'— Используйте inline-режим аналогичный ботам @gif, @vote, @like и другим.\n' +
+			'— Используйте команду <code>/show [competitive/quickplay]</code>.\n\n' +
+			'<i>Например:</i> <code>/show quickplay</code>.\n' +
+			'Данная команда отобразит статистику по быстрой игре.\n\n' +
+			'<b>Справка:</b> Процентное значение на изображении означает то, сколько игроков находятся выше вас. ' +
+			'Например, если указано 25%, то это значит, что в боте зарегистрировано ещё 25% процентов игроков, которые имеют ' +
+			'указанную характеристику, лучше чем у вас.\n\n' +
+			'По всем вопросам пишите <a href="https://t.me/kraso">мне</a>.',
+			{
+				parse_mode: 'HTML',
+				disable_web_page_preview: true
+			});
 });
 
 bot.onText(/^\/save (.+)\s(.+)|^\/save/i, async function (msg, match) {
-	let pretty_bt, battletag, platform, param, sended;
+	if (msg.chat.id > 0) {
+		let pretty_bt, battletag, platform, param, sended;
 
-	if (match[1] === undefined || match[2] === undefined)
-		sended = await bot.sendMessage(msg.chat.id, 'Пример: <code>/save Example#1337 eu</code>\n' +
-			'Доступные варианты: ' +
-			'<code>eu</code>, <code>us</code>, <code>kr</code>, <code>psn</code>, <code>xbl</code>', parse_html);
-	else {
-		sended = await bot.sendMessage(msg.chat.id, 'Пожалуйста подождите, идет сохранение...');
-		if (match[1].indexOf('-') > -1) {
-			const temp = match[1].split('-');
-			pretty_bt = temp[0] + '#' + temp[1];
-		} else
-			pretty_bt = match[1];
+		if (match[1] === undefined || match[2] === undefined)
+			bot.sendMessage(msg.chat.id, 'Пример: <code>/save Example#1337 eu</code>\n' +
+				'Доступные варианты: ' +
+				'<code>eu</code>, <code>us</code>, <code>kr</code>, <code>psn</code>, <code>xbl</code>', parse_html);
+		else {
+			sended = await bot.sendMessage(msg.chat.id, 'Пожалуйста подождите, идет сохранение...');
+			if (match[1].indexOf('-') > -1) {
+				const temp = match[1].split('-');
+				pretty_bt = temp[0] + '#' + temp[1];
+			} else
+				pretty_bt = match[1];
 
-		if (match[1].indexOf('#') > -1) {
-			const temp = match[1].split('#');
-			battletag = temp[0] + '-' + temp[1];
-		} else
-			battletag = match[1];
+			if (match[1].indexOf('#') > -1) {
+				const temp = match[1].split('#');
+				battletag = temp[0] + '-' + temp[1];
+			} else
+				battletag = match[1];
 
-		if (match[2] === 'eu' || match[2] === 'us' || match[2] === 'kr')
-			platform = 'pc';
-		else
-			platform = match[2];
+			if (match[2] === 'eu' || match[2] === 'us' || match[2] === 'kr')
+				platform = 'pc';
+			else
+				platform = match[2];
 
-		if (match[2] === 'psn' || match[2] === 'xbl')
-			param = 'any';
-		else
-			param = match[2];
+			if (match[2] === 'psn' || match[2] === 'xbl')
+				param = 'any';
+			else
+				param = match[2];
 
-		r.table('users')
-			.insert(
-				{
-					id: msg.from.id,
-					username: msg.from.username,
-					battletag: battletag,
-					pretty_bt: pretty_bt,
-					platform: platform,
-					param: param,
-					profile: r.http(`https://owapi.net/api/v3/u/${encodeURIComponent(battletag)}/blob`,
-						{
-							params: {
-								platform: platform
+			r.table('users')
+				.insert(
+					{
+						id: msg.from.id,
+						username: msg.from.username,
+						battletag: battletag,
+						pretty_bt: pretty_bt,
+						platform: platform,
+						param: param,
+						profile: r.http(`https://owapi.net/api/v3/u/${encodeURIComponent(battletag)}/blob`,
+							{
+								params: {
+									platform: platform
+								}
 							}
-						}
-					)(param),
-					profile_date: r.now(),
-					lang: 'ru'
-				},
-				{conflict: 'update'}
+						)(param),
+						profile_date: r.now(),
+						lang: 'ru'
+					},
+					{conflict: 'update'}
+				)
+
+				.then(function (status) {
+					console.log(status);
+					bot.editMessageText('Сохранено!', { message_id: sended.message_id, chat_id: msg.chat.id });
+				})
+
+				.catch(function (error) {
+					console.log(error.message);
+					bot.editMessageText(`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>`,
+						{message_id: sended.message_id, chat_id: msg.chat.id, parse_mode: 'HTML'});
+				});
+		}
+	}
+});
+
+bot.onText(/^\/update/i, async function (msg) {
+	if (msg.chat.id > 0) {
+		const sended = await bot.sendMessage(msg.chat.id, 'Пожалуйста подождите, идет обновление...');
+		const user = await r.table('users').get(msg.from.id);
+
+		let profile;
+		try {
+			profile = await r.http(`https://owapi.net/api/v3/u/${encodeURIComponent(user.battletag)}/blob`,
+				{params: {platform: user.platform}})(user.param);
+		} catch (error) {
+			profile = null;
+
+			console.warn(error.message);
+			bot.editMessageText(`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>`,
+				{message_id: sended.message_id, chat_id: msg.chat.id, parse_mode: 'HTML'});
+		}
+
+
+		r.table('users').get(msg.from.id)
+			.update(
+				// Условие
+				r.branch(
+					// Если профиль не null -- сохраняем, если null -- ничего не делаем.
+					profile,
+					{
+						username: msg.from.username,
+						profile: profile,
+						profile_date: r.now()
+					},
+					{}
+				)
 			)
 
 			.then(function (status) {
 				console.log(status);
-				bot.editMessageText('Сохранено!', { message_id: sended.message_id, chat_id: msg.chat.id });
+				if (status.replaced !== 0)
+					bot.editMessageText('Обновлено!',
+						{message_id: sended.message_id, chat_id: msg.chat.id});
+				if (status.skipped !== 0)
+					bot.editMessageText('Изменения не внесены!',
+						{message_id: sended.message_id, chat_id: msg.chat.id});
 			})
 
 			.catch(function (error) {
-				console.log(error.message);
+				console.warn(error.message);
 				bot.editMessageText(`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>`,
 					{message_id: sended.message_id, chat_id: msg.chat.id, parse_mode: 'HTML'});
 			});
 	}
-
-	deleteIfInGroup(msg, sended);
-});
-
-bot.onText(/^\/update/i, async function (msg) {
-	const sended = await bot.sendMessage(msg.chat.id, 'Пожалуйста подождите, идет обновление...');
-	const user = await r.table('users').get(msg.from.id);
-
-	let profile;
-	try {
-		profile = await r.http(`https://owapi.net/api/v3/u/${encodeURIComponent(user.battletag)}/blob`,
-			{params: {platform: user.platform}})(user.param);
-	} catch(error) {
-		profile = null;
-
-		console.warn(error.message);
-		bot.editMessageText(`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>`,
-			{message_id: sended.message_id, chat_id: msg.chat.id, parse_mode: 'HTML'});
-	}
-
-
-	r.table('users').get(msg.from.id)
-		.update(
-			// Условие
-			r.branch(
-				// Если профиль не null -- сохраняем, если null -- ничего не делаем.
-				profile,
-				{
-					username: msg.from.username,
-					profile: profile,
-					profile_date: r.now()
-				},
-				{}
-			)
-		)
-
-		.then(function (status) {
-			console.log(status);
-			if (status.replaced !== 0)
-				bot.editMessageText('Обновлено!',
-					{ message_id: sended.message_id, chat_id: msg.chat.id });
-			if (status.skipped !== 0)
-				bot.editMessageText('Изменения не внесены!',
-					{ message_id: sended.message_id, chat_id: msg.chat.id });
-		})
-
-		.catch(function (error) {
-			console.warn(error.message);
-			bot.editMessageText(`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>`,
-				{message_id: sended.message_id, chat_id: msg.chat.id, parse_mode: 'HTML'});
-		});
-
-	deleteIfInGroup(msg, sended);
 });
 
 bot.onText(/^\/delete/i, function (msg) {
-	let sended;
+	if (msg.chat.id > 0) {
+		r.table('users').get(msg.from.id)
+			.delete()
 
-	r.table('users').get(msg.from.id)
-		.delete()
+			.then(function (status) {
+				console.log(status);
+				if (status.deleted !== 0)
+					return bot.sendMessage(msg.chat.id, 'Удалено!');
+				if (status.skipped !== 0)
+					return bot.sendMessage(msg.chat.id, 'Нечего удалять.');
+			})
 
-		.then(function (status) {
-			console.log(status);
-			if (status.deleted !== 0)
-				return bot.sendMessage(msg.chat.id, 'Удалено!');
-			if (status.skipped !== 0)
-				return bot.sendMessage(msg.chat.id, 'Нечего удалять.');
-		})
-
-		.then(function (sended) {
-			deleteIfInGroup(msg, sended);
-		})
-
-		.catch(function (error) {
-			throwError(error, msg.chat.id)
-				.then(function (sended) {
-					deleteIfInGroup(msg, sended);
-				});
-		});
+			.catch(function (error) {
+				throwError(error, msg.chat.id);
+			});
+	}
 });
 
 bot.onText(/^\/winratetop/i, function (msg) {
-	let sended;
-
 	r.table('users')
 		.orderBy(r.desc(r.row('profile')('stats')('quickplay')('overall_stats')('win_rate')))
 		.limit(10)
@@ -280,21 +259,12 @@ bot.onText(/^\/winratetop/i, function (msg) {
 			return bot.sendMessage(msg.chat.id, top, parse_html);
 		})
 
-		.then(function (sended) {
-			deleteIfInGroup(msg, sended);
-		})
-
 		.catch(function (error) {
-			throwError(error, msg.chat.id)
-				.then(function (sended) {
-					deleteIfInGroup(msg, sended);
-				});
+			throwError(error, msg.chat.id);
 		});
 });
 
 bot.onText(/^\/ratingtop/i, function (msg) {
-	let sended;
-
 	r.table('users')
 		.orderBy(r.desc(r.row('profile')('stats')('competitive')('overall_stats')('comprank')))
 		.limit(10)
@@ -313,15 +283,8 @@ bot.onText(/^\/ratingtop/i, function (msg) {
 			return bot.sendMessage(msg.chat.id, top, parse_html);
 		})
 
-		.then(function (sended) {
-			deleteIfInGroup(msg, sended);
-		})
-
 		.catch(function (error) {
-			throwError(error, msg.chat.id)
-				.then(function (sended) {
-					deleteIfInGroup(msg, sended);
-				});
+			throwError(error, msg.chat.id);
 		});
 });
 
@@ -434,140 +397,137 @@ function getHeroQuickplayRank(id, name, readableName, hero, statsType, asc) {
 }
 
 bot.onText(/^\/generate/i, async function (msg) {
-	const id = msg.from.id;
-	const user = await r.table('users').get(id);
+	if (msg.chat.id > 1) {
+		const id = msg.from.id;
+		const user = await r.table('users').get(id);
 
-	const competitiveRanks = [
-		getCompetitiveRank(id, 'damage_done_avg', 'НАНЕСЕНО УРОНА'),
-		getCompetitiveRank(id, 'deaths_avg', 'СМЕРТЕЙ', undefined, true),
-		getCompetitiveRank(id, 'eliminations_avg', 'УБИЙСТВ'),
-		getCompetitiveRank(id, 'final_blows_avg', 'СМЕРТЕЛЬНЫХ УДАРОВ'),
-		getCompetitiveRank(id, 'healing_done_avg', 'ОБЪЕМ ИСЦЕЛЕНИЯ'),
-		getCompetitiveRank(id, 'melee_final_blows_avg', 'СМЕРТ. УДАРОВ В РУКОП.'),
-		getCompetitiveRank(id, 'objective_kills_avg', 'УБИЙСТВ У ОБЪЕКТОВ'),
-		getCompetitiveRank(id, 'objective_time_avg', 'ВЫПОЛНЕНИЕ ЗАДАЧ'),
-		getCompetitiveRank(id, 'solo_kills_avg', 'ОДИНОЧНЫХ УБИЙСТВ'),
-		getCompetitiveRank(id, 'time_spent_on_fire_avg', 'ВРЕМЯ В УДАРЕ'),
-		'competitive'
-	];
+		let competitive = {
+			mode: 'competitive',
+			ranks: [
+				//getCompetitiveRank(id, 'all_damage_done_avg_per_10_min', 'УРОНА (ЗА 10 МИН)'),
+				getCompetitiveRank(id, 'deaths_avg', 'СМЕРТЕЙ', undefined, true),
+				getCompetitiveRank(id, 'eliminations_avg', 'УБИЙСТВ'),
+				getCompetitiveRank(id, 'final_blows_avg', 'СМЕРТЕЛЬНЫХ УДАРОВ'),
+				getCompetitiveRank(id, 'healing_done_avg', 'ОБЪЕМ ИСЦЕЛЕНИЯ'),
+				getCompetitiveRank(id, 'melee_final_blows_avg', 'СМЕРТ. УДАРОВ В РУКОП.'),
+				getCompetitiveRank(id, 'objective_kills_avg', 'УБИЙСТВ У ОБЪЕКТОВ'),
+				getCompetitiveRank(id, 'objective_time_avg', 'ВЫПОЛНЕНИЕ ЗАДАЧ'),
+				getCompetitiveRank(id, 'solo_kills_avg', 'ОДИНОЧНЫХ УБИЙСТВ'),
+				getCompetitiveRank(id, 'time_spent_on_fire_avg', 'ВРЕМЯ В УДАРЕ'),
+			]
+		};
 
-	const quickplayRanks = [
-		//getHeroQuickplayRank(id, 'damage_blocked_average', 'УРОНА ЗАБЛОКИРОВАНО', 'dva'),
-		getQuickplayRank(id, 'damage_done_avg', 'НАНЕСЕНО УРОНА'),
-		getQuickplayRank(id, 'deaths_avg', 'СМЕРТЕЙ', undefined, true),
-		getQuickplayRank(id, 'eliminations_avg', 'УБИЙСТВ'),
-		getQuickplayRank(id, 'final_blows_avg', 'СМЕРТЕЛЬНЫХ УДАРОВ'),
-		getQuickplayRank(id, 'objective_kills_avg', 'УБИЙСТВ У ОБЪЕКТОВ'),
-		getQuickplayRank(id, 'objective_time_avg', 'ВЫПОЛНЕНИЕ ЗАДАЧ'),
-		getQuickplayRank(id, 'solo_kills_avg', 'ОДИНОЧНЫХ УБИЙСТВ'),
-		getQuickplayRank(id, 'time_spent_on_fire_avg', 'ВРЕМЯ В УДАРЕ'),
-		getQuickplayRank(id, 'kpd', 'УБИЙСТВ/СМЕРТЕЙ', 'game_stats'),
-		getQuickplayRank(id, 'win_rate', 'ВИНРЕЙТ, %', 'overall_stats'),
-		'quickplay'
-	];
+		let quickplay = {
+			mode: 'quickplay',
+			ranks: [
+				//getQuickplayRank(id, 'all_damage_done_avg_per_10_min', 'УРОНА (ЗА 10 МИН)'),
+				getQuickplayRank(id, 'deaths_avg', 'СМЕРТЕЙ', undefined, true),
+				getQuickplayRank(id, 'eliminations_avg', 'УБИЙСТВ'),
+				getQuickplayRank(id, 'final_blows_avg', 'СМЕРТЕЛЬНЫХ УДАРОВ'),
+				getQuickplayRank(id, 'objective_kills_avg', 'УБИЙСТВ У ОБЪЕКТОВ'),
+				getQuickplayRank(id, 'objective_time_avg', 'ВЫПОЛНЕНИЕ ЗАДАЧ'),
+				getQuickplayRank(id, 'solo_kills_avg', 'ОДИНОЧНЫХ УБИЙСТВ'),
+				getQuickplayRank(id, 'time_spent_on_fire_avg', 'ВРЕМЯ В УДАРЕ'),
+				getQuickplayRank(id, 'kpd', 'УБИЙСТВ/СМЕРТЕЙ', 'game_stats'),
+				getQuickplayRank(id, 'win_rate', 'ВИНРЕЙТ, %', 'overall_stats'),
+			]
+		};
 
-	const sended = await bot.sendMessage(msg.chat.id, 'Пожалуйста подождите, идет генерация...');
+		const sended = await bot.sendMessage(msg.chat.id, 'Пожалуйста подождите, идет генерация...');
 
-	let competitive, quickplay, tempRanks = [];
+		let temp = [];
 
-	try {
-		competitive = await Promise.all(competitiveRanks);
-		tempRanks.push(competitive);
-	} catch(error) {
-		console.warn(error.message);
-	}
+		try {
+			competitive.ranks = await Promise.all(competitive.ranks);
+			temp.push(competitive);
+			console.log(competitive);
+		} catch (error) {
+			console.warn(error.message);
+		}
 
-	try {
-		quickplay = await Promise.all(quickplayRanks);
-		tempRanks.push(quickplay);
-	} catch(error) {
-		console.warn(error.message);
-	}
+		try {
+			quickplay.ranks = await Promise.all(quickplay.ranks);
+			temp.push(quickplay);
+			console.log(quickplay);
+		} catch (error) {
+			console.warn(error.message);
+		}
 
-	let text = 'Процесс генерации:\n<pre>';
-	const startTotal = new Date().getTime();
-	for (let i in tempRanks) {
-		if (tempRanks.hasOwnProperty(i)) {
-			const startCycle = new Date().getTime();
-			try {
-				await image.generate(user.profile, user.pretty_bt, tempRanks[i], msg.from.id, msg.chat.id);
-				text += `${(new Date().getTime()) - startCycle} ms: ${tempRanks[i][tempRanks[i].length - 1]} done!️\n`;
-			} catch (error) {
-				console.warn(error.message);
-				text += `${(new Date().getTime()) - startCycle} ms: ${tempRanks[i][tempRanks[i].length - 1]} failed!\n`;
+		let text = 'Процесс генерации:\n<pre>';
+		const startTotal = new Date().getTime();
+		for (let i in temp) {
+			if (temp.hasOwnProperty(i)) {
+				const startCycle = new Date().getTime();
+				try {
+					await image.generate(user.profile, user.pretty_bt, temp[i], msg.from.id, msg.chat.id);
+					text += `${(new Date().getTime()) - startCycle} ms: ${temp[i].mode} done!️\n`;
+				} catch (error) {
+					console.warn(error.message);
+					text += `${(new Date().getTime()) - startCycle} ms: ${temp[i].mode} failed!\n`;
+				}
+				await bot.editMessageText(`${text}Total: ${(new Date().getTime()) - startTotal} ms</pre>`,
+					{message_id: sended.message_id, chat_id: msg.chat.id, parse_mode: 'HTML'});
 			}
-			await bot.editMessageText(`${text}Total: ${(new Date().getTime()) - startTotal} ms</pre>`,
-				{message_id: sended.message_id, chat_id: msg.chat.id, parse_mode: 'HTML'});
 		}
 	}
-
-	deleteIfInGroup(msg, sended);
 });
 
 bot.onText(/^\/show (.+)|^\/show/i, async function (msg, match) {
-	let sended;
+	if (msg.chat.id > 0) {
+		if (match[1] === undefined)
+			bot.sendMessage(msg.chat.id, 'Пример: <code>/show competitive</code>\n' +
+				'Доступные параметры: ' +
+				'<code>quickplay</code>, <code>competitive</code>', parse_html);
 
-	if (match[1] === undefined)
-		sended = await bot.sendMessage(msg.chat.id, 'Пример: <code>/show competitive</code>\n' +
-			'Доступные параметры: ' +
-			'<code>quickplay</code>, <code>competitive</code>', parse_html);
+		else {
+			r.table('users')
+				.get(msg.from.id)
 
-	else {
-		r.table('users')
-			.get(msg.from.id)
+				.then(function (profile) {
+					if (profile !== null
+						&& profile.imgur_quickplay_link !== null
+						&& profile.imgur_competitive_link !== null) {
 
-			.then(function (profile) {
-				if (profile !== null
-					&& profile.imgur_quickplay_link !== null
-					&& profile.imgur_competitive_link !== null) {
+						let link;
+						if (match[1] === 'quickplay')
+							link = profile.imgur_quickplay_link;
+						else if (match[1] === 'competitive')
+							link = profile.imgur_competitive_link;
 
-					let link;
-					if (match[1] === 'quickplay')
-						link = profile.imgur_quickplay_link;
-					else if (match[1] === 'competitive')
-						link = profile.imgur_competitive_link;
+						return bot.sendPhoto(msg.chat.id, link);
+					} else
+						return bot.sendMessage(msg.chat.id, 'Изображения не сгенерированы! /guide');
+				})
 
-					return bot.sendPhoto(msg.chat.id, link);
-				} else
-					return bot.sendMessage(msg.chat.id, 'Изображения не сгенерированы! /guide');
-			})
+				.catch(function (error) {
+					throwError(error, msg.chat.id);
+				});
+		}
+	}
+});
 
-			.then(function (sended) {
-				deleteIfInGroup(msg, sended);
-			})
+bot.onText(/^\/links/, function (msg) {
+	if (msg.chat.id > 0) {
+		r.table('users').get(msg.from.id)
+			.then(function (res) {
+				let text = '<b>Ссылки на Imgur</b>:\n';
+				if (res.imgur_quickplay_link !== undefined)
+					text += `Быстрая: ${res.imgur_quickplay_link}\n`;
+				if (res.imgur_competitive_link !== undefined)
+					text += `Соревновательная: ${res.imgur_competitive_link}\n`;
 
-			.catch(function (error) {
-				throwError(error, msg.chat.id)
-					.then(function (sended) {
-						deleteIfInGroup(msg, sended);
+				bot.sendMessage(msg.chat.id, text,
+					{
+						parse_mode: 'HTML',
+						disable_web_page_preview: true
 					});
 			});
 	}
 });
 
-bot.onText(/^\/links/, function (msg) {
-	let sended;
-
-	r.table('users').get(msg.from.id)
-		.then(async function (res) {
-			let text = '<b>Ссылки на Imgur</b>:\n';
-			if (res.imgur_quickplay_link !== undefined)
-				text += `Быстрая: ${res.imgur_quickplay_link}\n`;
-			if (res.imgur_competitive_link !== undefined)
-				text += `Соревновательная: ${res.imgur_competitive_link}\n`;
-
-			sended = await bot.sendMessage(msg.chat.id, text,
-				{
-					parse_mode: 'HTML',
-					disable_web_page_preview: true
-				});
-
-			deleteIfInGroup(msg, sended);
-		});
-});
-
 bot.onText(/^\/donate/, function (msg) {
-	bot.sendMessage(msg.chat.id, "Небольшую сумму на поддержание и разработку можно подкинуть <a href='https://krasovsky.me/bots'>здесь</a>.", {parse_mode: 'HTML'});
+	if (msg.chat.id > 0)
+		bot.sendMessage(msg.chat.id, "Небольшую сумму на поддержание и разработку можно подкинуть <a href='https://krasovsky.me/bots'>здесь</a>.", {parse_mode: 'HTML'});
 });
 
 bot.on('message', function (msg) {
