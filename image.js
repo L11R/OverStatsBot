@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const opentype = require('opentype.js');
 const imgur = require('imgur');
+const Gradient = require('gradient');
 
 imgur.setClientId(config.private.imgur_client_id);
 
@@ -38,6 +39,7 @@ module.exports.generate = async function(data, pretty_bt, input, user_id, chat_i
 	const heroesColors = {
 		ana: '#47699e',
 		bastion: '#5a724f',
+		doomfist: 'TEMP',
 		dva: '#fc78bd',
 		genji: '#80fb00',
 		hanzo: '#b2a765',
@@ -250,6 +252,8 @@ module.exports.generate = async function(data, pretty_bt, input, user_id, chat_i
 
 	// Stats
 	const splitedRanks = R.splitEvery(5, ranks);
+	const grad = Gradient(['#dd0000', '#dddd00', '#00dd00'], 100);
+	const colors = grad.toArray('hexString');
 
 	for (let raw in splitedRanks) {
 		// First group
@@ -292,12 +296,31 @@ module.exports.generate = async function(data, pretty_bt, input, user_id, chat_i
 				top: 410 + 130 * raw,
 				fill: 'grey',
 				fontFamily: 'BigNoodleToo',
-				fontSize: 30
+				fontSize: 25
+			});
+
+			const rankBar = new fabric.Rect({
+				left: 20 + 155 * column,
+				top: 440 + 130 * raw,
+				width: 140 - (parseInt(splitedRanks[raw][column].rank, 10) / 100 * 140),
+				height: 4,
+				fill: colors[100 - parseInt(splitedRanks[raw][column].rank, 10)]
+			});
+
+			const rankBarBackground = new fabric.Rect({
+				left: 20 + 155 * column,
+				top: 440 + 130 * raw,
+				width: 140,
+				height: 4,
+				fill: 'grey'
 			});
 
 			canvas.add(name);
 			canvas.add(value);
 			canvas.add(rank);
+
+			canvas.add(rankBarBackground);
+			canvas.add(rankBar);
 		}
 	}
 

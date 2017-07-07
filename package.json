@@ -5,9 +5,11 @@
   "main": "index.js",
   "dependencies": {
     "canvas": "^1.6.5",
+    "color": "^0.7.3",
     "counterpart": "^0.18.1",
     "fabric": "^2.0.0-beta.1",
     "fs": "0.0.1-security",
+    "gradient": "github:tstone/Gradient.js",
     "imgur": "^0.2.1",
     "node-telegram-bot-api": "^0.27.1",
     "opentype.js": "^0.7.1",
