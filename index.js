@@ -52,20 +52,25 @@ global.throwError = function (error, id) {
 
 require('./inline')();
 
+function setLocale(msg) {
+	if (msg.from.language_code !== undefined)
+		translate.setLocale(msg.from.language_code.substr(0, 2));
+}
+
 bot.onText(/^\/start/i, function (msg) {
-	translate.setLocale(msg.from.language_code.substr(0, 2));
-	if (msg.chat.id)
+	setLocale(msg);
+	if (msg.chat.id > 0)
 		bot.sendMessage(msg.chat.id, translate("start_message"), parse_html);
 });
 
 bot.onText(/^\/help/i, function (msg) {
-	translate.setLocale(msg.from.language_code.substr(0, 2));
+	setLocale(msg);
 	if (msg.chat.id > 0)
 		bot.sendMessage(msg.chat.id, translate("help_message"), parse_html);
 });
 
 bot.onText(/^\/guide/i, function (msg) {
-	translate.setLocale(msg.from.language_code.substr(0, 2));
+	setLocale(msg);
 	if (msg.chat.id > 0)
 		bot.sendMessage(msg.chat.id, translate("guide_message"),
 			{
@@ -75,7 +80,7 @@ bot.onText(/^\/guide/i, function (msg) {
 });
 
 bot.onText(/^\/save (.+)\s(.+)|^\/save/i, async function (msg, match) {
-	translate.setLocale(msg.from.language_code.substr(0, 2));
+	setLocale(msg);
 	if (msg.chat.id > 0) {
 		let pretty_bt, battletag, platform, param, sended;
 
@@ -114,7 +119,7 @@ bot.onText(/^\/save (.+)\s(.+)|^\/save/i, async function (msg, match) {
 						pretty_bt: pretty_bt,
 						platform: platform,
 						param: param,
-						profile: r.http(`https://owapi.net/api/v3/u/${encodeURIComponent(battletag)}/blob`,
+						profile: r.http(`https://owapi.krasovsky.me/api/v3/u/${encodeURIComponent(battletag)}/blob`,
 							{
 								params: {
 									platform: platform
@@ -140,13 +145,13 @@ bot.onText(/^\/save (.+)\s(.+)|^\/save/i, async function (msg, match) {
 	}
 });
 
-function update(msg) {
+function update(user_id) {
 	return new Promise(async function (resolve, reject) {
-		const user = await r.table('users').get(msg.from.id);
+		const user = await r.table('users').get(user_id);
 
 		let profile;
 		try {
-			profile = await r.http(`https://owapi.net/api/v3/u/${encodeURIComponent(user.battletag)}/blob`,
+			profile = await r.http(`https://owapi.krasovsky.me/api/v3/u/${encodeURIComponent(user.battletag)}/blob`,
 				{params: {platform: user.platform}})(user.param);
 		} catch (error) {
 			profile = null;
@@ -154,14 +159,13 @@ function update(msg) {
 			reject(error);
 		}
 
-		r.table('users').get(msg.from.id)
+		r.table('users').get(user_id)
 			.update(
 				// Условие
 				r.branch(
 					// Если профиль не null -- сохраняем, если null -- ничего не делаем.
 					profile,
 					{
-						username: msg.from.username,
 						profile: profile,
 						profile_date: r.now()
 					},
@@ -179,12 +183,33 @@ function update(msg) {
 	});
 }
 
+setInterval(function () {
+	r.table('users')
+		.pluck('id')('id')
+
+		.then(async function (res) {
+			console.log(res);
+			for (let i in res) {
+				try {
+					const status = await update(res[i]);
+					console.log(status);
+				} catch (error) {
+					console.warn(error.message);
+				}
+			}
+		})
+
+		.catch(function (error) {
+			console.warn(error.message);
+		});
+}, 1000 * 60 * 15);
+
 bot.onText(/^\/update/i, async function (msg) {
-	translate.setLocale(msg.from.language_code.substr(0, 2));
+	setLocale(msg);
 	if (msg.chat.id > 0) {
 		const sended = await bot.sendMessage(msg.chat.id, translate("please_wait_updating_message"));
 
-		update(msg)
+		update(msg.from.id)
 			.then(function (res) {
 				console.log(res);
 				bot.editMessageText(translate("updated_message"),
@@ -200,7 +225,7 @@ bot.onText(/^\/update/i, async function (msg) {
 });
 
 bot.onText(/^\/delete/i, function (msg) {
-	translate.setLocale(msg.from.language_code.substr(0, 2));
+	setLocale(msg);
 	if (msg.chat.id > 0) {
 		r.table('users').get(msg.from.id)
 			.delete()
@@ -220,7 +245,7 @@ bot.onText(/^\/delete/i, function (msg) {
 });
 
 bot.onText(/^\/winratetop/i, function (msg) {
-	translate.setLocale(msg.from.language_code.substr(0, 2));
+	setLocale(msg);
 	r.table('users')
 		.orderBy(r.desc(r.row('profile')('stats')('quickplay')('overall_stats')('win_rate')))
 		.limit(10)
@@ -245,7 +270,7 @@ bot.onText(/^\/winratetop/i, function (msg) {
 });
 
 bot.onText(/^\/ratingtop/i, function (msg) {
-	translate.setLocale(msg.from.language_code.substr(0, 2));
+	setLocale(msg);
 	r.table('users')
 		.orderBy(r.desc(r.row('profile')('stats')('competitive')('overall_stats')('comprank')))
 		.limit(10)
@@ -378,7 +403,7 @@ function getHeroQuickplayRank(id, name, readableName, hero, statsType, asc) {
 }
 
 bot.onText(/^\/generate/i, async function (msg) {
-	translate.setLocale(msg.from.language_code.substr(0, 2));
+	setLocale(msg);
 	if (msg.chat.id > 1) {
 		const id = msg.from.id;
 		const user = await r.table('users').get(id);
@@ -451,7 +476,7 @@ bot.onText(/^\/generate/i, async function (msg) {
 });
 
 bot.onText(/^\/show (.+)|^\/show/i, async function (msg, match) {
-	translate.setLocale(msg.from.language_code.substr(0, 2));
+	setLocale(msg);
 	if (msg.chat.id > 0) {
 		if (match[1] === undefined)
 			bot.sendMessage(msg.chat.id, translate("show_example_message"), parse_html);
@@ -484,7 +509,7 @@ bot.onText(/^\/show (.+)|^\/show/i, async function (msg, match) {
 });
 
 bot.onText(/^\/links/, function (msg) {
-	translate.setLocale(msg.from.language_code.substr(0, 2));
+	setLocale(msg);
 	if (msg.chat.id > 0) {
 		r.table('users').get(msg.from.id)
 			.then(function (res) {
@@ -504,7 +529,7 @@ bot.onText(/^\/links/, function (msg) {
 });
 
 bot.onText(/^\/donate/, function (msg) {
-	translate.setLocale(msg.from.language_code.substr(0, 2));
+	setLocale(msg);
 	if (msg.chat.id > 0)
 		bot.sendMessage(msg.chat.id, translate("donate_message"), {parse_mode: 'HTML'});
 });
