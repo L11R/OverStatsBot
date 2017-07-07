@@ -15,7 +15,7 @@ global.R = require('ramda');
 global.bot = new TelegramBot(config.private.token, config.private.botconf);
 
 const translate = require('counterpart');
-translate.setFallbackLocale('ru');
+translate.setFallbackLocale('en');
 
 translate.registerTranslations('en', require('counterpart/locales/en'));
 translate.registerTranslations('en', require('./translations/en.json'));
@@ -47,22 +47,10 @@ global.hoursToTime = function (hours) {
 global.throwError = function (error, id) {
 	console.warn(error.message);
 	return bot.sendMessage(id,
-		`Что-то пошло не так...\n<code>${error.message.split('\n')[0] + ' ...'}</code>`, parse_html);
+		translate("error_message", {error: error.message.split('\n')[0] + ' ...'}), parse_html);
 };
 
 require('./inline')();
-
-function deleteIfInGroup(msg, sended) {
-	if (msg.chat.id < 0)
-		bot.sendMessage(msg.chat.id, 'Через 10 секунд <b>все сообщения будут удалены</b>. Пиши боту в личку!', parse_html)
-			.then(function (warn) {
-				setTimeout(function () {
-					bot.deleteMessage(msg.chat.id, msg.message_id);
-					bot.deleteMessage(sended.chat.id, sended.message_id);
-					bot.deleteMessage(warn.chat.id, warn.message_id);
-				}, 10000);
-		});
-}
 
 bot.onText(/^\/start/i, function (msg) {
 	translate.setLocale(msg.from.language_code.substr(0, 2));
