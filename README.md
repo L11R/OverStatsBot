@@ -16,10 +16,10 @@ module.exports.private = {
 	token: 'YOUR_TONEN',
 	imgur_client_id: 'YOUR_CLIENT_ID',
 	database: {
-		    db: 'overwatch',
-        	servers: [{host: 'IP', port: 28015}]
-    	},
-    botconf: {polling:true} // or Webhooks
+		db: 'overwatch',
+		//servers: [{host: 'IP', port: 28015}]
+	},
+	botconf: {polling:true} // or Webhooks
 };
 ```
 Of course you will should to get token from [@BotFather](https://t.me/BotFather) and 
