@@ -1,5 +1,6 @@
 {
   "error_message": "Что-то пошло не так...\n<code>%(error)s</code>",
+  "language_changed_message": "Язык изменен.",
 
   "start_message": "Используйте /help, если не знаете что делать.",
   "help_message": "<b>OverStats 2.2</b> <code>by @kraso</code>\n\n/guide - Инструкция по использованию!\n\n/save <b>Example#1337 eu</b> - Сохраняет ваш актуальный профиль в базу c регионом Europe. Доступные варианты: <code>eu</code>, <code>us</code>, <code>kr</code>, <code>psn</code>, <code>xbl</code>.\n/update - Обновляет имеющийся профиль в базе до актуального.\n/delete - Полностью удаляет профиль и любую информацию из базы.\n\n/generate - Генерирует два изображения с вашей статистикой относительно других игроков, использующих бота.\n/show <code>[competitive/quickplay]</code> - Отображает эти изображения.\n\n<i>[Временно]</i> /winratetop - Топ-10 в Быстрой Игре по винрейту.\n<i>[Временно]</i> /ratingtop - Топ-10 в Соревновательной Игре по рейтингу.",
@@ -44,5 +45,12 @@
   "time_spent_on_fire_avg": "ВРЕМЯ В УДАРЕ",
 
   "kpd": "УБИЙСТВ/СМЕРТЕЙ",
-  "win_rate": "ВИНРЕЙТ, %%"
+  "win_rate": "ВИНРЕЙТ, %%",
+
+  "report_header": "<b>Рапорт по сессии</b>\n\n",
+  "report_rating": "Рейтинг:",
+  "report_wins": "Победы:",
+  "report_losses": "Поражения:",
+  "report_ties": "Ничьи:",
+  "report_level": "Уровень:"
 }

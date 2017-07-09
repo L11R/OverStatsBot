@@ -39,7 +39,7 @@ module.exports.generate = async function(data, pretty_bt, input, user_id, chat_i
 	const heroesColors = {
 		ana: '#47699e',
 		bastion: '#5a724f',
-		doomfist: 'TEMP',
+		doomfist: '#000000', // TEMP
 		dva: '#fc78bd',
 		genji: '#80fb00',
 		hanzo: '#b2a765',

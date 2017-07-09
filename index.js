@@ -52,25 +52,48 @@ global.throwError = function (error, id) {
 
 require('./inline')();
 
-function setLocale(msg) {
-	if (msg.from.language_code !== undefined)
-		translate.setLocale(msg.from.language_code.substr(0, 2));
+async function setLocale(msg) {
+	try {
+		const lang = await r.table('users').get(msg.from.id)('lang');
+		translate.setLocale(lang.substr(0, 2));
+	} catch (error) {
+		console.warn(error.message);
+
+		if (msg.from.language_code !== undefined)
+			translate.setLocale(msg.from.language_code.substr(0, 2));
+	}
 }
 
-bot.onText(/^\/start/i, function (msg) {
-	setLocale(msg);
+bot.onText(/^\/lang (.+)/, async function (msg, match) {
+	await setLocale(msg);
+	r.table('users').get(msg.from.id)
+		.update({
+			lang: match[1]
+		})
+
+		.then(function () {
+			bot.sendMessage(msg.chat.id, translate("language_changed_message"));
+		})
+
+		.catch(function (error) {
+			throwError(error, msg.chat.id);
+		});
+});
+
+bot.onText(/^\/start/i, async function (msg) {
+	await setLocale(msg);
 	if (msg.chat.id > 0)
 		bot.sendMessage(msg.chat.id, translate("start_message"), parse_html);
 });
 
-bot.onText(/^\/help/i, function (msg) {
-	setLocale(msg);
+bot.onText(/^\/help/i, async function (msg) {
+	await setLocale(msg);
 	if (msg.chat.id > 0)
 		bot.sendMessage(msg.chat.id, translate("help_message"), parse_html);
 });
 
-bot.onText(/^\/guide/i, function (msg) {
-	setLocale(msg);
+bot.onText(/^\/guide/i, async function (msg) {
+	await setLocale(msg);
 	if (msg.chat.id > 0)
 		bot.sendMessage(msg.chat.id, translate("guide_message"),
 			{
@@ -80,7 +103,7 @@ bot.onText(/^\/guide/i, function (msg) {
 });
 
 bot.onText(/^\/save (.+)\s(.+)|^\/save/i, async function (msg, match) {
-	setLocale(msg);
+	await setLocale(msg);
 	if (msg.chat.id > 0) {
 		let pretty_bt, battletag, platform, param, sended;
 
@@ -115,6 +138,7 @@ bot.onText(/^\/save (.+)\s(.+)|^\/save/i, async function (msg, match) {
 					{
 						id: msg.from.id,
 						username: msg.from.username,
+						lang: 'en',
 						battletag: battletag,
 						pretty_bt: pretty_bt,
 						platform: platform,
@@ -125,8 +149,7 @@ bot.onText(/^\/save (.+)\s(.+)|^\/save/i, async function (msg, match) {
 									platform: platform
 								}
 							}
-						)(param),
-						profile_date: r.now(),
+						)(param)
 					},
 					{conflict: 'update'}
 				)
@@ -167,7 +190,6 @@ function update(user_id) {
 					profile,
 					{
 						profile: profile,
-						profile_date: r.now()
 					},
 					{}
 				)
@@ -189,23 +211,38 @@ setInterval(function () {
 
 		.then(async function (res) {
 			console.log(res);
-			for (let i in res) {
+
+			const promises = res.map(function (id) {
+				return update(id);
+			});
+
+			const splitedPromises = R.splitEvery(3, promises);
+
+			const startTotal = new Date().getTime();
+
+			for (let i in splitedPromises) {
+				const startCycle = new Date().getTime();
 				try {
-					const status = await update(res[i]);
+					const status = await Promise.all(splitedPromises[i]);
 					console.log(status);
+					console.warn(`CYCLE: ${((new Date().getTime()) - startCycle) / 1000}s`);
 				} catch (error) {
 					console.warn(error.message);
+					console.warn(`CYCLE: ${((new Date().getTime()) - startCycle) / 1000}s`);
 				}
 			}
+
+			console.warn(`TOTAL: ${((new Date().getTime()) - startTotal) / 1000}s`);
 		})
 
 		.catch(function (error) {
 			console.warn(error.message);
 		});
-}, 1000 * 60 * 15);
+}, 1000 * 60 * 5);
+
 
 bot.onText(/^\/update/i, async function (msg) {
-	setLocale(msg);
+	await setLocale(msg);
 	if (msg.chat.id > 0) {
 		const sended = await bot.sendMessage(msg.chat.id, translate("please_wait_updating_message"));
 
@@ -224,8 +261,8 @@ bot.onText(/^\/update/i, async function (msg) {
 	}
 });
 
-bot.onText(/^\/delete/i, function (msg) {
-	setLocale(msg);
+bot.onText(/^\/delete/i, async function (msg) {
+	await setLocale(msg);
 	if (msg.chat.id > 0) {
 		r.table('users').get(msg.from.id)
 			.delete()
@@ -244,21 +281,19 @@ bot.onText(/^\/delete/i, function (msg) {
 	}
 });
 
-bot.onText(/^\/winratetop/i, function (msg) {
-	setLocale(msg);
+bot.onText(/^\/winratetop/i, async function (msg) {
+	await setLocale(msg);
 	r.table('users')
 		.orderBy(r.desc(r.row('profile')('stats')('quickplay')('overall_stats')('win_rate')))
 		.limit(10)
 		.then(function (users) {
 			let top = '<b>Топ-10 по винрейту в Быстрой Игре</b>:\n';
 			for (let i in users) {
-				if (users.hasOwnProperty(i)) {
-					if (users[i].profile !== undefined) {
-						if (users[i].username !== undefined)
-							top += `${parseInt(i) + 1}. ${users[i].pretty_bt} (<code>@${users[i].username}</code>): ${users[i].profile.stats.quickplay.overall_stats.win_rate}%\n`;
-						else
-							top += `${parseInt(i) + 1}. ${users[i].pretty_bt}: ${users[i].profile.stats.quickplay.overall_stats.win_rate}%\n`
-					}
+				if (users[i].profile !== undefined) {
+					if (users[i].username !== undefined)
+						top += `${parseInt(i) + 1}. ${users[i].pretty_bt} (<code>@${users[i].username}</code>): ${users[i].profile.stats.quickplay.overall_stats.win_rate}%\n`;
+					else
+						top += `${parseInt(i) + 1}. ${users[i].pretty_bt}: ${users[i].profile.stats.quickplay.overall_stats.win_rate}%\n`
 				}
 			}
 			return bot.sendMessage(msg.chat.id, top, parse_html);
@@ -269,21 +304,19 @@ bot.onText(/^\/winratetop/i, function (msg) {
 		});
 });
 
-bot.onText(/^\/ratingtop/i, function (msg) {
-	setLocale(msg);
+bot.onText(/^\/ratingtop/i, async function (msg) {
+	await setLocale(msg);
 	r.table('users')
 		.orderBy(r.desc(r.row('profile')('stats')('competitive')('overall_stats')('comprank')))
 		.limit(10)
 		.then(function (users) {
 			let top = '<b>Топ-10 по рейтингу в Соревновательной Игре</b>:\n';
 			for (let i in users) {
-				if (users.hasOwnProperty(i)) {
-					if (users[i].profile !== undefined) {
-						if (users[i].username !== undefined)
-							top += `${parseInt(i) + 1}. ${users[i].pretty_bt} (<code>@${users[i].username}</code>): ${users[i].profile.stats.competitive.overall_stats.comprank}\n`;
-						else
-							top += `${parseInt(i) + 1}. ${users[i].pretty_bt}: ${users[i].profile.stats.competitive.overall_stats.comprank}\n`
-					}
+				if (users[i].profile !== undefined) {
+					if (users[i].username !== undefined)
+						top += `${parseInt(i) + 1}. ${users[i].pretty_bt} (<code>@${users[i].username}</code>): ${users[i].profile.stats.competitive.overall_stats.comprank}\n`;
+					else
+						top += `${parseInt(i) + 1}. ${users[i].pretty_bt}: ${users[i].profile.stats.competitive.overall_stats.comprank}\n`
 				}
 			}
 			return bot.sendMessage(msg.chat.id, top, parse_html);
@@ -403,7 +436,7 @@ function getHeroQuickplayRank(id, name, readableName, hero, statsType, asc) {
 }
 
 bot.onText(/^\/generate/i, async function (msg) {
-	setLocale(msg);
+	await setLocale(msg);
 	if (msg.chat.id > 1) {
 		const id = msg.from.id;
 		const user = await r.table('users').get(id);
@@ -476,7 +509,7 @@ bot.onText(/^\/generate/i, async function (msg) {
 });
 
 bot.onText(/^\/show (.+)|^\/show/i, async function (msg, match) {
-	setLocale(msg);
+	await setLocale(msg);
 	if (msg.chat.id > 0) {
 		if (match[1] === undefined)
 			bot.sendMessage(msg.chat.id, translate("show_example_message"), parse_html);
@@ -508,8 +541,8 @@ bot.onText(/^\/show (.+)|^\/show/i, async function (msg, match) {
 	}
 });
 
-bot.onText(/^\/links/, function (msg) {
-	setLocale(msg);
+bot.onText(/^\/links/, async function (msg) {
+	await setLocale(msg);
 	if (msg.chat.id > 0) {
 		r.table('users').get(msg.from.id)
 			.then(function (res) {
@@ -528,10 +561,63 @@ bot.onText(/^\/links/, function (msg) {
 	}
 });
 
-bot.onText(/^\/donate/, function (msg) {
-	setLocale(msg);
+bot.onText(/^\/donate/, async function (msg) {
+	await setLocale(msg);
 	if (msg.chat.id > 0)
 		bot.sendMessage(msg.chat.id, translate("donate_message"), {parse_mode: 'HTML'});
+});
+
+r.table('users').changes()
+	.filter(r.row('new_val')('profile').ne(r.row('old_val')('profile')))
+	.then(function (cursor) {
+		cursor.each(async function (err, row) {
+			if (err) new Error(err);
+
+			console.log('Feed change detected!');
+
+			await setLocale({from: {id: row.old_val.id}})
+			if (row.old_val && row.new_val && row.old_val.profile && row.new_val.profile) {
+				const oldStats = row.old_val.profile.stats.competitive.overall_stats;
+				const newStats = row.new_val.profile.stats.competitive.overall_stats;
+
+				oldStats.level = oldStats.level + oldStats.prestige * 100;
+				newStats.level = newStats.level + newStats.prestige * 100;
+
+				const diffStats = {
+					comprank: newStats.comprank - oldStats.comprank,
+					games: newStats.games - oldStats.games,
+					level: newStats.level - oldStats.level,
+					losses: newStats.losses - oldStats.losses,
+					ties: newStats.ties - oldStats.ties,
+					wins: newStats.wins - oldStats.wins,
+				};
+
+				function addInfo(name, oldInfo, newInfo, diffInfo) {
+					let text = `${name}\n<code>${oldInfo} | ${newInfo} |`;
+					if (diffInfo > 0)
+						text += ` +${diffInfo} 📈\n</code>`;
+					else if (diffInfo === 0)
+						text += ` ${diffInfo} —\n</code>`;
+					else
+						text += ` ${diffInfo} 📉\n</code>`;
+					return text;
+				}
+
+				let text = translate("report_header");
+
+				text += addInfo(translate("report_rating"), oldStats.comprank, newStats.comprank, diffStats.comprank);
+				text += addInfo(translate("report_wins"), oldStats.wins, newStats.wins, diffStats.wins);
+				text += addInfo(translate("report_losses"), oldStats.losses, newStats.losses, diffStats.losses);
+				text += addInfo(translate("report_ties"), oldStats.ties, newStats.ties, diffStats.ties);
+				text += addInfo(translate("report_level"), oldStats.level, newStats.level, diffStats.level);
+
+				bot.sendMessage(row.old_val.id, text, {parse_mode: 'HTML'});
+			}
+		});
+	});
+
+bot.onText(/^\/test/, function (msg) {
+	bot.sendMessage(msg.chat.id, '@48756093 (Savely)')
 });
 
 bot.on('message', function (msg) {

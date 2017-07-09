@@ -1,5 +1,6 @@
 {
   "error_message": "Something goes wrong...\n<code>%(error)s</code>",
+  "language_changed_message": "Language changed.",
 
   "start_message": "Use /help if you don't know what to do.",
   "help_message": "<b>OverStats 2.2</b> <code>by @kraso</code>\n\n/guide - Detailed guide about how to use it!\n\n/save <b>Example#1337 eu</b> - Saves your actual profile into database with Europe region. Available variants: <code>eu</code>, <code>us</code>, <code>kr</code>, <code>psn</code>, <code>xbl</code>.\n/update - Updates an existing profile from database to the newest.\n/delete - Fully deletes profile from database and any other metainfo.\n\n/generate - Generates two images with your stats relatively to other players that are using bot too.\n/show <code>[competitive/quickplay]</code> - Shows those two images.\n\n<i>[Temprorary]</i> /winratetop - Top-10 by winrate in Quickplay.\n<i>[Temporary]</i> /ratingtop - Top-10 by skill rating in Competitive.",
@@ -44,5 +45,12 @@
   "time_spent_on_fire_avg": "TIME SPENT ON FIRE",
 
   "kpd": "KILLS/DEATHS",
-  "win_rate": "WINRATE, %%"
+  "win_rate": "WINRATE, %%",
+
+  "report_header": "<b>Session Report</b>\n\n",
+  "report_rating": "Rating:",
+  "report_wins": "Wins:",
+  "report_losses": "Losses:",
+  "report_ties": "Ties:",
+  "report_level": "Level:"
 }
