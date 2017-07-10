@@ -143,7 +143,7 @@ bot.onText(/^\/save (.+)\s(.+)|^\/save/i, async function (msg, match) {
 						pretty_bt: pretty_bt,
 						platform: platform,
 						param: param,
-						profile: r.http(`https://owapi.krasovsky.me/api/v3/u/${encodeURIComponent(battletag)}/blob`,
+						profile: r.http(`http://owapi.net/api/v3/u/${encodeURIComponent(battletag)}/blob`,
 							{
 								params: {
 									platform: platform
