@@ -1,53 +1,36 @@
 /**
  * Created by savely on 01.05.2017.
  */
-module.exports = function () {
-	// Основной цикл для обработки inline-запросов
-	bot.on('inline_query', function (inlineQuery) {
-		r.table('users').get(inlineQuery.from.id).pluck('imgur')('imgur')
+const db = require('./db');
 
-			.then(function (imgur) {
-				let answer = [];
+module.exports.init = function (id) {
+	return new Promise(async function (resolve, reject) {
+		try {
+			const imgur = await db.getUserImages(id);
 
-				if (imgur.quickplay.link)
-					answer.push({
-						id: '0',
-						type: 'photo',
-						title: 'Быстрая игра',
-						photo_url: imgur.quickplay.link,
-						thumb_url: 'http://i.imgur.com/DnHTlC2.jpg'
-					});
+			let answer = [];
 
-				if (imgur.competitive.link)
-					answer.push({
-						id: '1',
-						type: 'photo',
-						title: 'Соревновательная игра',
-						photo_url: imgur.competitive.link,
-						thumb_url: 'http://i.imgur.com/iYnp6L3.jpg'
-					});
+			if (imgur.quickplay.all.link)
+				answer.push({
+					id: '0',
+					type: 'photo',
+					title: 'Быстрая игра',
+					photo_url: imgur.quickplay.all.link,
+					thumb_url: 'http://i.imgur.com/DnHTlC2.jpg'
+				});
 
-				return bot.answerInlineQuery(inlineQuery.id, answer, {is_personal: true});
-			})
+			if (imgur.competitive.all.link)
+				answer.push({
+					id: '1',
+					type: 'photo',
+					title: 'Соревновательная игра',
+					photo_url: imgur.competitive.all.link,
+					thumb_url: 'http://i.imgur.com/iYnp6L3.jpg'
+				});
 
-			.then(function (status) {
-				console.log(status);
-			})
-
-			.catch(function (error) {
-				console.warn(error.message);
-				bot.answerInlineQuery(inlineQuery.id, [], {
-					switch_pm_text: 'Ты не сгенерировал изображения.',
-					switch_pm_parameter: 'inline',
-					is_personal: true
-				})
-					.then(function (status) {
-						console.log(status);
-					})
-
-					.catch(function (error) {
-						console.warn(error.message);
-					});
-			});
+			resolve(answer);
+		} catch (error) {
+			reject(error);
+		}
 	});
 };

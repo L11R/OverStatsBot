@@ -9,6 +9,7 @@ imgur.setClientId(config.private.imgur_client_id);
 
 module.exports.generate = async function(data, pretty_bt, input, user_id, chat_id) {
 	const canvas = fabric.createCanvasForNode(800, 600);
+	const hero = input.hero;
 	const mode = input.mode;
 	const ranks = input.ranks;
 
@@ -82,14 +83,14 @@ module.exports.generate = async function(data, pretty_bt, input, user_id, chat_i
 	const futura_ot = opentype.loadSync('fonts/FuturaPTBold.ttf');
 
 	// Linux
-	//const bignoodle = new canvas.Font('BigNoodleToo.ttf', __dirname + '/fonts/BigNoodleToo.ttf');
-	//const bignoodle_italic = new canvas.Font('BigNoodleTooOblique.ttf', __dirname + '/fonts/BigNoodleTooOblique.ttf');
-	//const futura =  new canvas.Font('FuturaPTBold.ttf', __dirname + '/fonts/FuturaPTBold.ttf');
+	const bignoodle = new canvas.Font('BigNoodleToo.ttf', __dirname + '/fonts/BigNoodleToo.ttf');
+	const bignoodle_italic = new canvas.Font('BigNoodleTooOblique.ttf', __dirname + '/fonts/BigNoodleTooOblique.ttf');
+	const futura =  new canvas.Font('FuturaPTBold.ttf', __dirname + '/fonts/FuturaPTBold.ttf');
 
 	// Windows
-	const bignoodle = new canvas.Font('BigNoodleToo', __dirname + '/fonts/BigNoodleToo.ttf');
-	const bignoodle_italic = new canvas.Font('BigNoodleTooOblique', __dirname + '/fonts/BigNoodleTooOblique.ttf');
-	const futura =  new canvas.Font('FuturaPTBold', __dirname + '/fonts/FuturaPTBold.ttf');
+	//const bignoodle = new canvas.Font('BigNoodleToo', __dirname + '/fonts/BigNoodleToo.ttf');
+	//const bignoodle_italic = new canvas.Font('BigNoodleTooOblique', __dirname + '/fonts/BigNoodleTooOblique.ttf');
+	//const futura =  new canvas.Font('FuturaPTBold', __dirname + '/fonts/FuturaPTBold.ttf');
 
 	// Fonts activating
 	canvas.contextContainer.addFont(bignoodle);
@@ -101,19 +102,22 @@ module.exports.generate = async function(data, pretty_bt, input, user_id, chat_i
 	// Background with heroes colors gradient
 	let outline = new fabric.Rect({
 		width: canvas.width,
-		height: canvas.height
+		height: canvas.height,
+		fill: heroesColors[hero]
 	});
 
-	outline.setGradient('fill', {
-		x2: outline.width,
-		colorStops: {
-			0:    heroesColors[heroesArr[0].name],
-			0.25: heroesColors[heroesArr[1].name],
-			0.5:  heroesColors[heroesArr[2].name],
-			0.75: heroesColors[heroesArr[3].name],
-			1:    heroesColors[heroesArr[4].name]
-		}
-	});
+	if (hero === 'all') {
+		outline.setGradient('fill', {
+			x2: outline.width,
+			colorStops: {
+				0:    heroesColors[heroesArr[0].name],
+				0.25: heroesColors[heroesArr[1].name],
+				0.5:  heroesColors[heroesArr[2].name],
+				0.75: heroesColors[heroesArr[3].name],
+				1:    heroesColors[heroesArr[4].name]
+			}
+		});
+	}
 
 	canvas.add(outline);
 
@@ -177,77 +181,96 @@ module.exports.generate = async function(data, pretty_bt, input, user_id, chat_i
 	canvas.add(value);
 
 	// Heroes pics
-	for (let i = 0; i < 5; i++) {
-		function addImage() {
-			return new Promise(function (resolve) {
-				fabric.Image.fromURL(`images/heroes/${heroesArr[i].name}.png`, function (img) {
-					img.set({
-						left: 20 + 155 * i,
-						top: 80,
-						width: 140,
-						height: 240
-					});
+	function addHeroImage(hero, path, options) {
+		return new Promise(function (resolve) {
+			fabric.Image.fromURL(path, function (img) {
+				img.set(options);
 
-					const background = new fabric.Rect({
-						left: img.left,
-						top: img.top,
-						width: img.width,
-						height: img.height,
-						fill: '#ccc'
-					});
-
-					const panel = new fabric.Rect({
-						left: img.left - 1,
-						top: img.top + 200,
-						width: img.width + 1,
-						height: img.height - 200,
-						fill: heroesColors[heroesArr[i].name]
-					});
-
-					let timeColor;
-
-					const regexp = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(heroesColors[heroesArr[i].name]);
-					const result = {
-						r: parseInt(regexp[1], 16),
-						g: parseInt(regexp[2], 16),
-						b: parseInt(regexp[3], 16)
-					};
-
-					const brightness = Math.sqrt(
-						result.r * result.r * 0.241 +
-						result.g * result.g * 0.691 +
-						result.b * result.b * 0.068
-					);
-
-					if (brightness > 200)
-						timeColor = '#999';
-					else
-						timeColor = 'white';
-
-					let timeTemp;
-					if (heroesArr[i].timePlayed < 1)
-						timeTemp = `${(heroesArr[i].timePlayed * 60).toFixed()}M`;
-					else
-						timeTemp = `${heroesArr[i].timePlayed.toFixed()}H`;
-
-					const timePlayed = new fabric.Text(timeTemp, {
-						left: img.left + img.width - 10 - bignoodle_ot.getAdvanceWidth(timeTemp, 30),
-						top: img.top + img.height - 35,
-						fill: timeColor,
-						fontFamily: 'BigNoodleToo',
-						fontSize: 30
-					});
-
-					canvas.add(background);
-					canvas.add(img);
-					canvas.add(panel);
-					canvas.add(timePlayed);
-
-					resolve();
+				const background = new fabric.Rect({
+					left: img.left,
+					top: img.top,
+					width: img.width,
+					height: img.height,
+					fill: '#ccc'
 				});
+
+				const panel = new fabric.Rect({
+					left: img.left - 1,
+					top: img.top + 200,
+					width: img.width + 1,
+					height: img.height - 200,
+					fill: heroesColors[hero.name]
+				});
+
+				let timeColor;
+
+				const regexp = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(heroesColors[hero.name]);
+				const result = {
+					r: parseInt(regexp[1], 16),
+					g: parseInt(regexp[2], 16),
+					b: parseInt(regexp[3], 16)
+				};
+
+				const brightness = Math.sqrt(
+					result.r * result.r * 0.241 +
+					result.g * result.g * 0.691 +
+					result.b * result.b * 0.068
+				);
+
+				if (brightness > 200)
+					timeColor = '#999';
+				else
+					timeColor = 'white';
+
+				let timeTemp;
+				if (hero.time < 1)
+					timeTemp = `${(hero.time * 60).toFixed()}M`;
+				else
+					timeTemp = `${hero.time.toFixed()}H`;
+
+				const timePlayed = new fabric.Text(timeTemp, {
+					left: img.left + img.width - 10 - bignoodle_ot.getAdvanceWidth(timeTemp, 30),
+					top: img.top + img.height - 35,
+					fill: timeColor,
+					fontFamily: 'BigNoodleToo',
+					fontSize: 30
+				});
+
+				canvas.add(background);
+				canvas.add(img);
+				canvas.add(panel);
+				canvas.add(timePlayed);
+
+				resolve();
 			});
+		});
+	}
+
+
+	if (hero === 'all') {
+		for (let i = 0; i < 5; i++) {
+			const options = {
+				left: 20 + 155 * i,
+				top: 80,
+				width: 140,
+				height: 240
+			};
+
+			const path = `images/heroes/${heroesArr[i].name}.png`;
+
+			await addHeroImage({name: heroesArr[i].name, time: heroesArr[i].timePlayed}, path, options);
 		}
-		await addImage();
+	} else {
+		const options = {
+			left: 20,
+			top: 80,
+			width: 450,
+			height: 240
+		};
+
+		const path = `images/arts/${hero}.jpg`;
+
+		await addHeroImage({name: hero, time: heroesPlaytime[hero]}, path, options);
 	}
 
 	// Stats
@@ -351,11 +374,18 @@ module.exports.generate = async function(data, pretty_bt, input, user_id, chat_i
 			// Getting deletehash from DB and removing image from Imgur (yes, we save their space to keep it free)
 			r.table('users').get(user_id).pluck('imgur')
 				.then(function (res) {
-					if (res.imgur !== undefined) {
-						if (mode === 'quickplay' && res.imgur.quickplay.deletehash !== undefined)
-							return imgur.deleteImage(res.imgur.quickplay.deletehash);
-						else if (mode === 'competitive' && res.imgur.competitive.deletehash !== undefined)
-							return imgur.deleteImage(res.imgur.competitive.deletehash);
+					if (res.imgur) {
+						if (mode === 'quickplay'
+							&& res.imgur.quickplay[hero]
+							&& res.imgur.quickplay[hero].deletehash)
+
+							return imgur.deleteImage(res.imgur.quickplay[hero].deletehash);
+
+						else if (mode === 'competitive'
+							&& res.imgur.competitive[hero]
+							&& res.imgur.competitive[hero].deletehash)
+
+							return imgur.deleteImage(res.imgur.competitive[hero].deletehash);
 					} else
 						return 'First generation!';
 				})
@@ -369,15 +399,19 @@ module.exports.generate = async function(data, pretty_bt, input, user_id, chat_i
 				.then(function (res) {
 					console.log(res);
 					let data = {};
+
 					data.quickplay = {};
 					data.competitive = {};
 
+					data.quickplay[hero] = {};
+					data.competitive[hero] = {};
+
 					if (mode === 'quickplay') {
-						data.quickplay.link = res.data.link;
-						data.quickplay.deletehash = res.data.deletehash;
+						data.quickplay[hero].link = res.data.link;
+						data.quickplay[hero].deletehash = res.data.deletehash;
 					} else if (mode === 'competitive') {
-						data.competitive.link = res.data.link;
-						data.competitive.deletehash = res.data.deletehash;
+						data.competitive[hero].link = res.data.link;
+						data.competitive[hero].deletehash = res.data.deletehash;
 					}
 
 					return r.table('users').get(user_id)

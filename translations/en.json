@@ -21,16 +21,16 @@
 
   "please_wait_generation_message": "Please wait, generation in progress...",
   "generation_progress_header_message": "Generation progress:\n<pre>",
-  "generation_done_message": "%(time)s ms: %(mode)s done!️\n",
-  "generation_failed_message": "%(time)s ms: %(mode)s failed!️\n",
+  "generation_done_message": "%(time)s ms: %(hero)s %(mode)s done!️\n",
+  "generation_failed_message": "%(time)s ms: %(hero)s %(mode)s failed!️\n",
   "generation_total_message": "%(text)sTotal: %(time)s ms</pre>",
 
   "show_example_message": "Example: <code>/show competitive</code>\nAvailable params: <code>quickplay</code>, <code>competitive</code>",
   "show_error_message": "Images not generated! /guide",
 
   "links_header_message": "<b>Links on Imgur</b>:\n",
-  "links_quickplay_message": "Quickplay: %(link)s",
-  "links_competitive_message": "Competitive: %(link)s",
+  "links_quickplay_message": "Quickplay: %(link)s\n",
+  "links_competitive_message": "Competitive: %(link)s\n",
 
   "donate_message": "You can do small donation on development <a href=\"https://krasovsky.me/bots\">here</a>.",
 

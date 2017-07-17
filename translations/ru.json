@@ -21,8 +21,8 @@
 
   "please_wait_generation_message": "Пожалуйста подождите, идет генерация...",
   "generation_progress_header_message": "Процесс генерации:\n<pre>",
-  "generation_done_message": "%(time)s мс: %(mode)s готово!️\n",
-  "generation_failed_message": "%(time)s мс: %(mode)s провалено!️\n",
+  "generation_done_message": "%(time)s мс: %(hero)s %(mode)s готово!️\n",
+  "generation_failed_message": "%(time)s мс: %(hero)s %(mode)s провалено!️\n",
   "generation_total_message": "%(text)sВсего: %(time)s мс</pre>",
 
   "show_example_message": "Пример: <code>/show competitive</code>\nДоступные параметры: <code>quickplay</code>, <code>competitive</code>",
